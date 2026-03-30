@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
+import io
 
 # ══════════════════════════════════════════════════════════════════════════════
 # 페이지 기본 설정
@@ -59,14 +60,6 @@ st.markdown("""
         background-color: #66c0f4 !important;
     }
 
-    /* 파일 업로더 */
-    [data-testid="stFileUploader"] {
-        background-color: #2a475e;
-        border: 1px dashed #4a90a4;
-        border-radius: 8px;
-        padding: 8px;
-    }
-
     /* 구분선 */
     hr { border-color: #4a90a4 !important; }
 
@@ -82,12 +75,89 @@ st.markdown("""
 # ══════════════════════════════════════════════════════════════════════════════
 # 색상 & 테마 상수
 # ══════════════════════════════════════════════════════════════════════════════
-PLOT_BG      = "#1b2838"   # 차트 외부 배경
-CHART_BG     = "#2a475e"   # 차트 내부 배경
-FONT_COLOR   = "#c7d5e0"   # 기본 텍스트
-GRID_COLOR   = "#3d6680"   # 그리드선
-ACCENT_LIGHT = "#66c0f4"   # 스팀 밝은 파랑
-ACCENT_DARK  = "#2a6496"   # 스팀 어두운 파랑
+PLOT_BG      = "#1b2838"
+CHART_BG     = "#2a475e"
+FONT_COLOR   = "#c7d5e0"
+GRID_COLOR   = "#3d6680"
+ACCENT_LIGHT = "#66c0f4"
+ACCENT_DARK  = "#2a6496"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 샘플 데이터 (URL 로딩 실패 시 폴백)
+# ══════════════════════════════════════════════════════════════════════════════
+SAMPLE_CSV = """name,price,genres,positive,negative,owners
+Counter-Strike 2,0,Action;Free to Play,1250000,320000,50000000 - 100000000
+Dota 2,0,Action;Free to Play;Strategy,980000,450000,50000000 - 100000000
+PUBG: BATTLEGROUNDS,29.99,Action;Adventure;Massively Multiplayer,850000,280000,10000000 - 20000000
+Elden Ring,59.99,Action;RPG,620000,42000,5000000 - 10000000
+Red Dead Redemption 2,59.99,Action;Adventure,530000,28000,5000000 - 10000000
+Cyberpunk 2077,59.99,Action;RPG,740000,190000,10000000 - 20000000
+The Witcher 3: Wild Hunt,39.99,Action;RPG,820000,24000,10000000 - 20000000
+Grand Theft Auto V,29.99,Action;Adventure,710000,130000,20000000 - 50000000
+Stardew Valley,14.99,RPG;Simulation;Indie,650000,14000,5000000 - 10000000
+Terraria,9.99,Action;Adventure;Indie,750000,11000,10000000 - 20000000
+Portal 2,9.99,Action;Adventure,780000,8500,10000000 - 20000000
+Half-Life: Alyx,59.99,Action;Adventure,160000,6000,1000000 - 2000000
+Hollow Knight,14.99,Action;Indie,420000,7200,5000000 - 10000000
+Hades,24.99,Action;Indie;RPG,370000,6800,5000000 - 10000000
+Celeste,19.99,Indie;Platformer,280000,4500,2000000 - 5000000
+Disco Elysium,39.99,RPG;Adventure;Indie,120000,5500,1000000 - 2000000
+Baldur's Gate 3,59.99,RPG;Adventure,620000,18000,5000000 - 10000000
+Divinity: Original Sin 2,44.99,RPG;Strategy,290000,9000,2000000 - 5000000
+Dark Souls III,59.99,Action;RPG,450000,32000,5000000 - 10000000
+Sekiro: Shadows Die Twice,59.99,Action;Adventure,310000,18000,2000000 - 5000000
+Death Stranding,39.99,Action;Adventure,180000,24000,2000000 - 5000000
+Monster Hunter: World,29.99,Action;RPG,460000,22000,5000000 - 10000000
+Destiny 2,0,Action;Free to Play;Massively Multiplayer,380000,210000,5000000 - 10000000
+Apex Legends,0,Action;Free to Play;Massively Multiplayer,450000,180000,10000000 - 20000000
+Warframe,0,Action;Free to Play;Massively Multiplayer,320000,95000,5000000 - 10000000
+Path of Exile,0,Action;Free to Play;RPG,290000,55000,5000000 - 10000000
+Team Fortress 2,0,Action;Free to Play,520000,310000,10000000 - 20000000
+Among Us,4.99,Casual;Indie;Multiplayer,310000,28000,5000000 - 10000000
+Fall Guys,0,Casual;Free to Play;Indie,180000,45000,2000000 - 5000000
+Valheim,20.99,Action;Adventure;Indie,480000,14000,5000000 - 10000000
+Rust,39.99,Action;Adventure;Massively Multiplayer,560000,210000,5000000 - 10000000
+ARK: Survival Evolved,49.99,Action;Adventure;Massively Multiplayer,320000,220000,5000000 - 10000000
+Subnautica,29.99,Action;Adventure;Indie,380000,9000,5000000 - 10000000
+No Man's Sky,59.99,Action;Adventure;Simulation,240000,40000,2000000 - 5000000
+Satisfactory,35.99,Early Access;Indie;Simulation,210000,4200,2000000 - 5000000
+Factorio,35.00,Indie;Simulation;Strategy,260000,3800,2000000 - 5000000
+RimWorld,39.99,Indie;Simulation;Strategy,290000,11000,2000000 - 5000000
+Cities: Skylines,29.99,Simulation;Strategy,380000,14000,5000000 - 10000000
+Civilization VI,59.99,Strategy,310000,45000,5000000 - 10000000
+Total War: THREE KINGDOMS,59.99,Action;Strategy,130000,18000,1000000 - 2000000
+Crusader Kings III,49.99,RPG;Simulation;Strategy,185000,10500,2000000 - 5000000
+Hearts of Iron IV,39.99,Simulation;Strategy,290000,28000,2000000 - 5000000
+Stellaris,39.99,Simulation;Strategy;Indie,260000,24000,2000000 - 5000000
+Football Manager 2024,54.99,Simulation;Sports;Strategy,52000,12000,500000 - 1000000
+FIFA 23,59.99,Sports;Simulation,42000,38000,1000000 - 2000000
+Rocket League,0,Free to Play;Sports,550000,85000,10000000 - 20000000
+NBA 2K24,59.99,Sports;Simulation,14000,28000,500000 - 1000000
+Forza Horizon 5,59.99,Racing;Sports,160000,14000,1000000 - 2000000
+Need for Speed Heat,49.99,Racing;Sports,28000,9500,500000 - 1000000
+Euro Truck Simulator 2,19.99,Simulation;Indie,450000,7500,5000000 - 10000000
+Garry's Mod,9.99,Indie;Simulation,680000,14000,20000000 - 50000000
+The Sims 4,0,Free to Play;Life Sim;Simulation,120000,65000,5000000 - 10000000
+Minecraft Dungeons,19.99,Action;Adventure;RPG,42000,8500,500000 - 1000000
+It Takes Two,39.99,Action;Adventure;Co-op,145000,4200,2000000 - 5000000
+A Way Out,29.99,Action;Adventure;Co-op,78000,6500,1000000 - 2000000
+Phasmophobia,13.99,Early Access;Horror;Indie,320000,18000,2000000 - 5000000
+Resident Evil Village,39.99,Action;Adventure;Horror,180000,11000,2000000 - 5000000
+Dead by Daylight,19.99,Action;Horror,280000,110000,5000000 - 10000000
+Left 4 Dead 2,9.99,Action;Co-op,590000,14000,20000000 - 50000000
+Back 4 Blood,39.99,Action;Co-op,75000,28000,1000000 - 2000000
+Ori and the Will of the Wisps,29.99,Action;Adventure;Indie,130000,3200,1000000 - 2000000
+Cuphead,19.99,Action;Indie,220000,7800,2000000 - 5000000
+Shovel Knight: Treasure Trove,24.99,Action;Adventure;Indie,58000,1800,1000000 - 2000000
+Undertale,9.99,Indie;RPG,440000,9000,5000000 - 10000000
+Deltarune,0,Free to Play;Indie;RPG,82000,2100,1000000 - 2000000
+Dave the Diver,19.99,Adventure;Indie;RPG,145000,4500,1000000 - 2000000
+Vampire Survivors,4.99,Casual;Indie;RPG,280000,4200,5000000 - 10000000
+Slay the Spire,24.99,Indie;RPG;Strategy,350000,7800,5000000 - 10000000
+Luck be a Landlord,14.99,Casual;Indie;Strategy,38000,1200,500000 - 1000000
+Balatro,17.99,Casual;Indie;Strategy,120000,2100,1000000 - 2000000
+"""
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -108,34 +178,46 @@ def parse_owners(owners_str: str) -> int:
         return 0
 
 
-def load_and_preprocess(uploaded_file=None) -> pd.DataFrame | None:
+@st.cache_data(show_spinner=False)
+def load_data() -> pd.DataFrame:
     """
-    CSV 로드 및 전처리.
-    - uploaded_file 이 있으면 그걸 사용, 없으면 steam_games.csv 시도.
-    - 전처리: 타입 변환, owners 평균화, 리뷰 비율 계산, 장르 리스트화.
+    데이터 로딩 우선순위:
+      1) GitHub 공개 URL에서 Steam 데이터셋 시도
+      2) 실패 시 코드 내장 샘플 데이터 사용
     """
-    try:
-        df = pd.read_csv(uploaded_file) if uploaded_file else pd.read_csv("steam_games.csv")
-    except FileNotFoundError:
-        return None
+    # ── 1순위: 공개 URL ──────────────────────────────────────────────────────
+    URLS = [
+        "https://raw.githubusercontent.com/nicholasgasior/steam-games-dataset/master/steam_games.csv",
+        "https://raw.githubusercontent.com/BogdanCojocar/medium-articles/master/realtime_kafka/data/steam_games.csv",
+    ]
+    for url in URLS:
+        try:
+            df = pd.read_csv(url, nrows=2000)
+            required = {"name", "price", "genres", "positive", "negative", "owners"}
+            if required.issubset(set(df.columns)):
+                return df
+        except Exception:
+            continue
 
-    # 필수 컬럼 검증
+    # ── 2순위: 내장 샘플 데이터 ──────────────────────────────────────────────
+    return pd.read_csv(io.StringIO(SAMPLE_CSV))
+
+
+def preprocess(df: pd.DataFrame) -> pd.DataFrame | None:
+    """전처리: 타입 변환, owners 평균화, 리뷰 비율 계산, 장르 리스트화."""
     required = {"name", "price", "genres", "positive", "negative", "owners"}
     missing  = required - set(df.columns)
     if missing:
         st.error(f"⚠️ 필수 컬럼 누락: {missing}")
         return None
 
-    # 기본 정제
     df = df.dropna(subset=["name", "genres"]).copy()
     df["price"]    = pd.to_numeric(df["price"],    errors="coerce").fillna(0)
     df["positive"] = pd.to_numeric(df["positive"], errors="coerce").fillna(0).astype(int)
     df["negative"] = pd.to_numeric(df["negative"], errors="coerce").fillna(0).astype(int)
 
-    # owners → 평균 정수
     df["owners_num"] = df["owners"].apply(parse_owners)
 
-    # 리뷰 관련 파생 컬럼
     df["total_reviews"]  = df["positive"] + df["negative"]
     df["positive_ratio"] = np.where(
         df["total_reviews"] > 0,
@@ -143,7 +225,6 @@ def load_and_preprocess(uploaded_file=None) -> pd.DataFrame | None:
         0.0,
     )
 
-    # 장르 문자열 → 리스트 (';' 또는 ',' 구분 모두 처리)
     df["genres_list"] = df["genres"].str.split(r"[;,]").apply(
         lambda x: [g.strip() for g in x if g.strip()] if isinstance(x, list) else []
     )
@@ -152,7 +233,6 @@ def load_and_preprocess(uploaded_file=None) -> pd.DataFrame | None:
 
 
 def get_all_genres(df: pd.DataFrame) -> list[str]:
-    """데이터프레임 내 전체 장르 목록(중복 제거, 정렬) 반환."""
     genres: set[str] = set()
     for gl in df["genres_list"]:
         genres.update(gl)
@@ -160,13 +240,25 @@ def get_all_genres(df: pd.DataFrame) -> list[str]:
 
 
 def base_layout() -> dict:
-    """모든 Plotly 차트에 공통 적용할 layout 딕셔너리."""
     return dict(
         paper_bgcolor=PLOT_BG,
         plot_bgcolor=CHART_BG,
         font=dict(color=FONT_COLOR, family="Segoe UI, sans-serif"),
         margin=dict(l=10, r=10, t=30, b=20),
     )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 데이터 로딩
+# ══════════════════════════════════════════════════════════════════════════════
+with st.spinner("🎮 Steam 데이터 불러오는 중..."):
+    df_raw_loaded = load_data()
+
+df_raw = preprocess(df_raw_loaded)
+
+if df_raw is None:
+    st.error("데이터 전처리에 실패했습니다.")
+    st.stop()
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -177,19 +269,10 @@ with st.sidebar:
     st.caption("Steam 게임 데이터 인터랙티브 분석")
     st.markdown("---")
 
-    # CSV가 없을 경우를 대비한 업로더
-    uploaded = st.file_uploader("📂 CSV 업로드 (파일 없을 때)", type="csv")
+    # 데이터 출처 표시
+    total_games = len(df_raw)
+    st.success(f"✅ {total_games:,}개 게임 로드 완료")
     st.markdown("---")
-
-    # 데이터 로드
-    df_raw = load_and_preprocess(uploaded)
-
-    if df_raw is None:
-        st.error(
-            "❌ `steam_games.csv` 파일을 찾을 수 없습니다.\n\n"
-            "위 업로더로 CSV를 직접 올려주세요."
-        )
-        st.stop()
 
     # ── 장르 필터 ──────────────────────────────────────────────────────────
     all_genres      = get_all_genres(df_raw)
@@ -214,7 +297,6 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("### 🔍 게임 상세 정보")
-    # 게임 선택은 필터링 후 옵션이 확정되므로, placeholder 먼저 표시
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -276,12 +358,11 @@ st.markdown("### 🔥 인기 게임 TOP 10 & 💸 가격 분포")
 col1, col2 = st.columns([3, 2], gap="large")
 
 with col1:
-    # 긍정 리뷰 수 기준 TOP 10
     top10 = (
         df.nlargest(10, "positive")[["name", "positive", "positive_ratio", "price"]]
         .copy()
     )
-    top10["label"] = top10["name"].str[:35]  # 긴 이름 truncate
+    top10["label"] = top10["name"].str[:35]
 
     fig_top10 = go.Figure(
         go.Bar(
@@ -320,7 +401,6 @@ with col1:
     st.plotly_chart(fig_top10, use_container_width=True)
 
 with col2:
-    # 가격 히스토그램 ($0.01 ~ $60 구간만)
     priced = df[(df["price"] > 0) & (df["price"] <= 60)]
 
     fig_hist = px.histogram(
@@ -348,7 +428,6 @@ st.markdown("### 📈 가격 vs 긍정 리뷰 수")
 st.caption("버블 크기 = 긍정 비율 | 색상 = 긍정 비율 (높을수록 밝음)")
 
 scatter_df = df[(df["price"] > 0) & (df["price"] < 80)].copy()
-# 버블 크기: 긍정 비율 기반, 최소·최대 clamp
 scatter_df["bubble"] = np.clip(scatter_df["positive_ratio"] / 10, 2, 18)
 
 fig_scatter = px.scatter(
@@ -424,7 +503,6 @@ with col3:
 with col4:
     st.markdown("#### 장르별 평균 긍정 비율 TOP 10")
 
-    # 장르 단위로 행 펼치기
     genre_rows = [
         {"genre": g, "positive_ratio": row["positive_ratio"]}
         for _, row in df.iterrows()
@@ -437,7 +515,7 @@ with col4:
         .agg(mean="mean", count="count")
         .reset_index()
     )
-    genre_top = genre_agg[genre_agg["count"] >= 5].nlargest(10, "mean")
+    genre_top = genre_agg[genre_agg["count"] >= 2].nlargest(10, "mean")
 
     fig_genre = go.Figure(
         go.Bar(
@@ -472,7 +550,6 @@ st.markdown(f"**{selected_game}**")
 
 game = df[df["name"] == selected_game].iloc[0]
 
-# 4개 메트릭
 d1, d2, d3, d4 = st.columns(4)
 
 with d1:
@@ -490,11 +567,9 @@ with d4:
 
 st.markdown(" ")
 
-# 게이지 + 텍스트 정보
 g1, g2 = st.columns([1, 2], gap="large")
 
 with g1:
-    # 긍정 비율 게이지
     ratio_val = game["positive_ratio"]
     gauge_color = (
         "#c0392b" if ratio_val < 40
