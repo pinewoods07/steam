@@ -60,7 +60,8 @@ st.markdown("""
     .stMultiSelect > div > div {
         background-color: #2a475e !important;
         color: #ffffff !important;
-        border-color: #4a90a4 !important;
+        border: 1.5px solid #66c0f4 !important;
+        border-radius: 6px !important;
     }
 
     /* 드롭다운 선택된 값 텍스트 */
@@ -74,16 +75,29 @@ st.markdown("""
 
     /* 드롭다운 옵션 텍스트 */
     [data-baseweb="menu"],
-    [data-baseweb="menu"] * { color: #ffffff !important; }
-    [role="option"], [role="option"] * { color: #ffffff !important; }
-    li[role="option"]:hover { background-color: #2a6496 !important; }
+    [data-baseweb="menu"] * { color: #e8eef2 !important; font-size: 0.95rem !important; }
+    [role="option"], [role="option"] * { color: #e8eef2 !important; }
+    li[role="option"]:hover,
+    li[role="option"]:hover * { background-color: #2a6496 !important; color: #ffffff !important; }
 
-    /* 멀티셀렉트 태그 */
+    /* 멀티셀렉트 선택된 태그 */
     [data-baseweb="tag"] {
-        background-color: #4a90a4 !important;
+        background-color: #1a5276 !important;
+        border: 1px solid #66c0f4 !important;
+        border-radius: 4px !important;
         color: #ffffff !important;
+        font-weight: 600 !important;
+        font-size: 0.85rem !important;
     }
     [data-baseweb="tag"] span { color: #ffffff !important; }
+
+    /* 멀티셀렉트 레이블 */
+    .stMultiSelect label,
+    .stSelectbox label {
+        color: #66c0f4 !important;
+        font-weight: 600 !important;
+        font-size: 0.95rem !important;
+    }
 
     /* 슬라이더 */
     .stSlider > div { color: #e8eef2 !important; }
@@ -281,15 +295,14 @@ def load_data() -> pd.DataFrame:
     else:
         df["price"] = 0.0
 
-    # ── 장르 합성: tags(rich) 우선, 없으면 genre(all) 사용 ──────────────────
-    # all 엔드포인트는 tags 없이 'genre' 문자열 필드를 반환함
-    # rich 엔드포인트는 'tags' dict 반환 → tags_to_genres 로 변환
-    # 두 필드를 합쳐서 최대한 장르 정보 보존
-    genre_from_all  = df["genre"].fillna("")  if "genre"  in df.columns else pd.Series("", index=df.index)
-    genre_from_tags = df["tags"].apply(tags_to_genres) if "tags" in df.columns else pd.Series("", index=df.index)
+    # ── 장르 합성: Steam 공식 genre(all) 우선, 없으면 tags 폴백 ────────────
+    # all 엔드포인트: 'genre' 문자열 → "Action, RPG" 형태, Steam 공식 카테고리
+    # rich 엔드포인트: 'tags' dict → 유저 정의 태그 (genre 없을 때만 사용)
+    genre_from_all  = df["genre"].fillna("").astype(str) if "genre" in df.columns else pd.Series("", index=df.index)
+    genre_from_tags = df["tags"].apply(tags_to_genres)   if "tags"  in df.columns else pd.Series("", index=df.index)
 
-    # tags 변환 결과가 있으면 우선 사용, 없으면 all의 genre 사용
-    df["genres"] = genre_from_tags.where(genre_from_tags != "", genre_from_all)
+    # Steam 공식 genre 우선 사용 → 없을 때만 tags 폴백
+    df["genres"] = genre_from_all.where(genre_from_all.str.strip() != "", genre_from_tags)
 
     return df
 
