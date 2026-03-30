@@ -759,6 +759,19 @@ else:
     game        = df[df["name"] == selected_game].iloc[0]
     detail_src  = "📋 목록 선택"
 
+    # 드롭다운 게임 장르 비어있으면 appid로 자동 보완
+    if not game["genres_list"] and "appid" in game.index and game["appid"]:
+        with st.spinner("장르 정보 불러오는 중..."):
+            raw_detail = fetch_game_by_appid(int(game["appid"]))
+        if raw_detail:
+            detail_df = preprocess(pd.DataFrame([raw_detail]))
+            if detail_df is not None and not detail_df.empty:
+                detail_row = detail_df.iloc[0]
+                if detail_row["genres_list"]:
+                    game = game.copy()
+                    game["genres_list"] = detail_row["genres_list"]
+                    game["genres"]      = detail_row["genres"]
+
 st.markdown(f"**{game['name']}** <span style='color:#4a90a4; font-size:0.8em;'>({detail_src})</span>",
             unsafe_allow_html=True)
 
