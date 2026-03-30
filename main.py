@@ -295,6 +295,17 @@ def base_layout() -> dict:
 # ══════════════════════════════════════════════════════════════════════════════
 with st.spinner("🎮 Steam 데이터 불러오는 중..."):
     df_raw_loaded = load_data()
+# ── 디버그: 실제 API 컬럼 & tags 샘플 확인 ────────────────────────────────
+if st.sidebar.checkbox("🔍 디버그 모드", value=False):
+    st.write("**실제 컬럼:**", list(df_raw_loaded.columns))
+    if "tags" in df_raw_loaded.columns:
+        sample_tag = df_raw_loaded["tags"].dropna().iloc[0] if not df_raw_loaded["tags"].dropna().empty else None
+        st.write("**tags 샘플:**", sample_tag, type(sample_tag))
+    else:
+        st.write("**tags 컬럼 없음!** 존재하는 컬럼:", list(df_raw_loaded.columns))
+    if "genres" in df_raw_loaded.columns:
+        st.write("**genres 샘플 5개:**", df_raw_loaded["genres"].head())
+
 
 df_raw = preprocess(df_raw_loaded)
 
