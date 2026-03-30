@@ -22,17 +22,25 @@ st.set_page_config(
 st.markdown("""
 <style>
     /* 전체 앱 배경 */
-    .stApp { background-color: #1b2838; color: #c7d5e0; }
+    .stApp { background-color: #1b2838; color: #e8eef2; }
 
     /* 사이드바 */
     [data-testid="stSidebar"] { background-color: #171a21 !important; }
-    [data-testid="stSidebar"] * { color: #c7d5e0 !important; }
+    [data-testid="stSidebar"] * { color: #e8eef2 !important; }
 
     /* 제목 */
     h1, h2, h3, h4 { color: #66c0f4 !important; }
 
-    /* 일반 텍스트 */
-    p, label, div, span, .stMarkdown { color: #c7d5e0 !important; }
+    /* 일반 텍스트 - 밝게 */
+    p, label, div, span, .stMarkdown { color: #e8eef2 !important; }
+
+    /* 텍스트 인풋 */
+    input, textarea {
+        background-color: #2a475e !important;
+        color: #ffffff !important;
+        border-color: #4a90a4 !important;
+    }
+    input::placeholder { color: #8fb8d1 !important; }
 
     /* 메트릭 카드 */
     [data-testid="metric-container"] {
@@ -41,13 +49,13 @@ st.markdown("""
         border-radius: 8px;
         padding: 16px;
     }
-    [data-testid="metric-container"] label { color: #8fb8d1 !important; }
+    [data-testid="metric-container"] label { color: #a8c8e0 !important; }
     [data-testid="metric-container"] [data-testid="stMetricValue"] {
         color: #66c0f4 !important;
         font-size: 1.6rem !important;
     }
 
-    /* selectbox / multiselect */
+    /* selectbox / multiselect 컨테이너 */
     .stSelectbox > div > div,
     .stMultiSelect > div > div {
         background-color: #2a475e !important;
@@ -55,45 +63,49 @@ st.markdown("""
         border-color: #4a90a4 !important;
     }
 
-    /* selectbox 드롭다운 옵션 텍스트 */
+    /* 드롭다운 선택된 값 텍스트 */
+    [data-baseweb="select"] [data-testid="stMarkdownContainer"] p,
     [data-baseweb="select"] span,
-    [data-baseweb="select"] div,
-    [data-baseweb="menu"] li,
-    [data-baseweb="menu"] div,
-    [role="listbox"] li,
-    [role="option"],
-    .stSelectbox [data-testid="stMarkdownContainer"],
-    div[data-baseweb="select"] > div > div {
-        color: #ffffff !important;
-        background-color: #2a475e !important;
-    }
+    [data-baseweb="select"] div { color: #ffffff !important; }
 
-    /* 드롭다운 메뉴 배경 */
-    [data-baseweb="popover"] {
-        background-color: #1b2838 !important;
-    }
+    /* 드롭다운 팝오버 메뉴 전체 */
+    [data-baseweb="popover"],
+    [data-baseweb="popover"] * { background-color: #1e3248 !important; }
 
-    [data-baseweb="menu"] {
-        background-color: #1b2838 !important;
-    }
+    /* 드롭다운 옵션 텍스트 */
+    [data-baseweb="menu"],
+    [data-baseweb="menu"] * { color: #ffffff !important; }
+    [role="option"], [role="option"] * { color: #ffffff !important; }
+    li[role="option"]:hover { background-color: #2a6496 !important; }
 
     /* 멀티셀렉트 태그 */
-    .stMultiSelect span[data-baseweb="tag"] {
+    [data-baseweb="tag"] {
         background-color: #4a90a4 !important;
         color: #ffffff !important;
     }
+    [data-baseweb="tag"] span { color: #ffffff !important; }
 
     /* 슬라이더 */
-    .stSlider > div { color: #c7d5e0 !important; }
+    .stSlider > div { color: #e8eef2 !important; }
     .stSlider [data-baseweb="slider"] div[role="slider"] {
         background-color: #66c0f4 !important;
     }
+    /* 슬라이더 숫자 레이블 */
+    .stSlider [data-testid="stTickBarMin"],
+    .stSlider [data-testid="stTickBarMax"],
+    .stSlider p { color: #e8eef2 !important; }
+
+    /* caption / small text */
+    .stCaption, small, [data-testid="stCaptionContainer"] p {
+        color: #a8c8e0 !important;
+    }
+
+    /* success/warning/error 박스 */
+    .stAlert { background-color: #2a475e !important; }
+    .stAlert p, .stAlert div, .stAlert span { color: #ffffff !important; }
 
     /* 구분선 */
     hr { border-color: #4a90a4 !important; }
-
-    /* 경고/에러 박스 */
-    .stAlert { background-color: #2a475e !important; }
 
     /* 푸터 */
     footer { visibility: hidden; }
@@ -323,10 +335,21 @@ def fetch_game_by_appid(appid: int) -> dict | None:
         # price: 센트 → 달러 변환
         if "price" in data:
             data["price"] = int(data.get("price", 0) or 0) / 100
-        # tags → genres 변환
-        data["genres"] = tags_to_genres(data.get("tags", {}))
-        if not data["genres"] and data.get("genre"):
-            data["genres"] = data["genre"]
+
+        # ── 장르 추출: tags dict 우선, 없으면 genre 문자열 사용 ──────────
+        genres_from_tags = tags_to_genres(data.get("tags", {}))
+        genres_from_field = str(data.get("genre") or data.get("genres") or "").strip()
+
+        if genres_from_tags:
+            data["genres"] = genres_from_tags
+        elif genres_from_field:
+            # "Action, RPG" → "Action;RPG" 으로 통일
+            data["genres"] = genres_from_field.replace(", ", ";").replace(",", ";")
+        else:
+            data["genres"] = ""
+
+        # genre(단수) 컬럼도 genres 와 동일하게 맞춰 preprocess 오작동 방지
+        data["genre"] = data["genres"]
         return data
     except Exception:
         return None
@@ -336,9 +359,13 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame | None:
     """전처리: 타입 변환, owners 평균화, 리뷰 비율 계산, 장르 리스트화."""
     df = df.copy()
 
-    # SteamSpy는 'genre'(단수) 로 반환 → 통일
+    # genre(단수) / genres(복수) 통일: genres 없거나 비어있으면 genre로 채움
     if "genre" in df.columns and "genres" not in df.columns:
         df = df.rename(columns={"genre": "genres"})
+    elif "genre" in df.columns and "genres" in df.columns:
+        # genres 가 비어있는 행은 genre 값으로 채움
+        mask_empty = df["genres"].isna() | (df["genres"].astype(str).str.strip() == "")
+        df.loc[mask_empty, "genres"] = df.loc[mask_empty, "genre"]
 
     required = {"name", "price", "genres", "positive", "negative", "owners"}
     missing  = required - set(df.columns)
