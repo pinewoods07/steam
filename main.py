@@ -458,9 +458,8 @@ fig_scatter.update_layout(
     xaxis=dict(gridcolor=GRID_COLOR),
     yaxis=dict(gridcolor=GRID_COLOR),
     coloraxis_colorbar=dict(
-        title="긍정 비율(%)",
+        title=dict(text="긍정 비율(%)", font=dict(color=FONT_COLOR)),
         tickfont=dict(color=FONT_COLOR),
-        titlefont=dict(color=FONT_COLOR),
     ),
     height=470,
     margin=dict(l=10, r=10, t=30, b=20),
@@ -488,7 +487,8 @@ with col3:
         line_dash="dash",
         line_color=ACCENT_LIGHT,
         annotation_text=f"평균 {avg_r:.1f}%",
-        annotation_font=dict(color=ACCENT_LIGHT, size=12),
+        annotation_font_color=ACCENT_LIGHT,
+        annotation_font_size=12,
         annotation_position="top right",
     )
     fig_ratio.update_layout(
