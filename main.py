@@ -183,30 +183,51 @@ def parse_owners(owners_str: str) -> int:
 @st.cache_data(show_spinner=False, ttl=86400)
 def load_data() -> pd.DataFrame:
     """
-    데이터 로딩 우선순위:
-      1) SteamSpy API all 엔드포인트 (page 0~2, 최대 3,000개)
-         - genre는 all에서 제공 안 됨 → tags 딕셔너리 상위 5개를 genres 대용으로 사용
-      2) 실패 시 코드 내장 샘플 데이터 사용
+    SteamSpy API:
+      - top100forever / top100in2weeks / top100owned → 태그 포함 풀 데이터 (~300개)
+      - all (page 0~4) → 태그 없음, 게임 수 많음 → 이후 병합해 genres 보완
+      폴백: 내장 샘플 데이터
     """
     import requests
 
-    STEAMSPY_URL = "https://steamspy.com/api.php"
-    records: list[dict] = []
+    BASE = "https://steamspy.com/api.php"
 
-    for page in range(3):
+    def fetch(params):
         try:
-            resp = requests.get(
-                STEAMSPY_URL,
-                params={"request": "all", "page": page},
-                timeout=20,
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            if not data:
-                break
-            records.extend(data.values())
+            r = requests.get(BASE, params=params, timeout=20)
+            r.raise_for_status()
+            return r.json()
         except Exception:
+            return {}
+
+    def tags_to_genres(val) -> str:
+        if isinstance(val, str):
+            try:
+                import json as _json
+                val = _json.loads(val)
+            except Exception:
+                return val
+        if not isinstance(val, dict) or not val:
+            return ""
+        top = sorted(val.items(), key=lambda x: x[1], reverse=True)[:5]
+        return ";".join(t[0] for t in top)
+
+    # ── 1단계: tags 포함된 엔드포인트로 기준 데이터 수집 ──────────────────────
+    rich: dict = {}
+    for req in ("top100forever", "top100in2weeks", "top100owned"):
+        rich.update(fetch({"request": req}))
+
+    # ── 2단계: all 엔드포인트로 게임 수 확장 (page 0~4) ──────────────────────
+    bulk: dict = {}
+    for page in range(5):
+        data = fetch({"request": "all", "page": page})
+        if not data:
             break
+        bulk.update(data)
+
+    # rich 데이터로 bulk 덮어쓰기 (tags 보존)
+    bulk.update(rich)
+    records = list(bulk.values())
 
     if not records:
         return pd.read_csv(io.StringIO(SAMPLE_CSV))
@@ -214,29 +235,19 @@ def load_data() -> pd.DataFrame:
     df = pd.DataFrame(records)
 
     # price: 센트 → 달러
-    df["price"] = pd.to_numeric(
-        df["price"] if "price" in df.columns else 0,
-        errors="coerce"
-    ).fillna(0) / 100
+    if "price" in df.columns:
+        df["price"] = pd.to_numeric(df["price"], errors="coerce").fillna(0) / 100
+    else:
+        df["price"] = 0.0
 
-    # tags: dict 또는 JSON 문자열 모두 처리 → 상위 5개 태그를 세미콜론 연결
-    def tags_to_genres(val) -> str:
-        if isinstance(val, str):
-            try:
-                val = json.loads(val)
-            except Exception:
-                return val  # 이미 "Action;RPG" 형태면 그대로 사용
-        if not isinstance(val, dict) or not val:
-            return ""
-        top = sorted(val.items(), key=lambda x: x[1], reverse=True)[:5]
-        return ";".join(t[0] for t in top)
-
+    # tags → genres
     if "tags" in df.columns:
         df["genres"] = df["tags"].apply(tags_to_genres)
-    else:
+    elif "genres" not in df.columns or df.get("genres", pd.Series(dtype=str)).eq("").all():
         df["genres"] = ""
 
     return df
+
 
 
 
@@ -295,16 +306,17 @@ def base_layout() -> dict:
 # ══════════════════════════════════════════════════════════════════════════════
 with st.spinner("🎮 Steam 데이터 불러오는 중..."):
     df_raw_loaded = load_data()
-# ── 디버그: 실제 API 컬럼 & tags 샘플 확인 ────────────────────────────────
-if st.sidebar.checkbox("🔍 디버그 모드", value=False):
+# ── 디버그: 실제 API 컬럼 & tags 샘플 확인 (항상 표시) ─────────────────────
+with st.expander("🔍 API 디버그 정보 (확인 후 삭제 예정)", expanded=True):
     st.write("**실제 컬럼:**", list(df_raw_loaded.columns))
     if "tags" in df_raw_loaded.columns:
         sample_tag = df_raw_loaded["tags"].dropna().iloc[0] if not df_raw_loaded["tags"].dropna().empty else None
-        st.write("**tags 샘플:**", sample_tag, type(sample_tag))
+        st.write("**tags 샘플:**", sample_tag)
+        st.write("**tags 타입:**", str(type(sample_tag)))
     else:
-        st.write("**tags 컬럼 없음!** 존재하는 컬럼:", list(df_raw_loaded.columns))
+        st.write("❌ tags 컬럼 없음!")
     if "genres" in df_raw_loaded.columns:
-        st.write("**genres 샘플 5개:**", df_raw_loaded["genres"].head())
+        st.write("**genres 샘플 5개:**", df_raw_loaded["genres"].head().tolist())
 
 
 df_raw = preprocess(df_raw_loaded)
