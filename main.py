@@ -166,11 +166,12 @@ Balatro,17.99,Casual;Indie;Strategy,120000,2100,1000000 - 2000000
 
 def parse_owners(owners_str: str) -> int:
     """
-    '1,000,000 - 2,000,000' 형태의 owners 문자열을 평균값 정수로 변환.
-    파싱 실패 시 0 반환.
+    SteamSpy: '2,000,000 .. 5,000,000'
+    구형 CSV: '1,000,000 - 2,000,000'
+    두 형식 모두 평균값 정수로 변환. 실패 시 0 반환.
     """
     try:
-        cleaned = str(owners_str).replace(",", "").replace(".", "")
+        cleaned = str(owners_str).replace(",", "").replace("..", "-")
         parts   = cleaned.split("-")
         nums    = [int(p.strip()) for p in parts if p.strip().isdigit()]
         return int(np.mean(nums)) if nums else 0
@@ -178,29 +179,41 @@ def parse_owners(owners_str: str) -> int:
         return 0
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=86400)
 def load_data() -> pd.DataFrame:
     """
     데이터 로딩 우선순위:
-      1) GitHub 공개 URL에서 Steam 데이터셋 시도
+      1) SteamSpy API — page 0~4 (최대 5,000개 게임, 무료·인증 불필요)
       2) 실패 시 코드 내장 샘플 데이터 사용
     """
-    # ── 1순위: 공개 URL ──────────────────────────────────────────────────────
-    URLS = [
-        "https://raw.githubusercontent.com/nicholasgasior/steam-games-dataset/master/steam_games.csv",
-        "https://raw.githubusercontent.com/BogdanCojocar/medium-articles/master/realtime_kafka/data/steam_games.csv",
-    ]
-    for url in URLS:
-        try:
-            df = pd.read_csv(url, nrows=2000)
-            required = {"name", "price", "genres", "positive", "negative", "owners"}
-            if required.issubset(set(df.columns)):
-                return df
-        except Exception:
-            continue
+    import requests
 
-    # ── 2순위: 내장 샘플 데이터 ──────────────────────────────────────────────
-    return pd.read_csv(io.StringIO(SAMPLE_CSV))
+    STEAMSPY_URL = "https://steamspy.com/api.php"
+    records: list[dict] = []
+
+    for page in range(5):
+        try:
+            resp = requests.get(
+                STEAMSPY_URL,
+                params={"request": "all", "page": page},
+                timeout=15,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            if not data:
+                break
+            records.extend(data.values())
+        except Exception:
+            break
+
+    if not records:
+        return pd.read_csv(io.StringIO(SAMPLE_CSV))
+
+    df = pd.DataFrame(records)
+    df = df.rename(columns={"genre": "genres"})
+    df["price"] = pd.to_numeric(df.get("price", 0), errors="coerce").fillna(0) / 100
+
+    return df
 
 
 def preprocess(df: pd.DataFrame) -> pd.DataFrame | None:
@@ -211,7 +224,9 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame | None:
         st.error(f"⚠️ 필수 컬럼 누락: {missing}")
         return None
 
-    df = df.dropna(subset=["name", "genres"]).copy()
+    df = df.copy()
+    df["genres"] = df["genres"].fillna("")   # SteamSpy: 장르 없는 게임 처리
+    df = df.dropna(subset=["name"]).copy()
     df["price"]    = pd.to_numeric(df["price"],    errors="coerce").fillna(0)
     df["positive"] = pd.to_numeric(df["positive"], errors="coerce").fillna(0).astype(int)
     df["negative"] = pd.to_numeric(df["negative"], errors="coerce").fillna(0).astype(int)
