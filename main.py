@@ -306,18 +306,6 @@ def base_layout() -> dict:
 # ══════════════════════════════════════════════════════════════════════════════
 with st.spinner("🎮 Steam 데이터 불러오는 중..."):
     df_raw_loaded = load_data()
-# ── 디버그: 실제 API 컬럼 & tags 샘플 확인 (항상 표시) ─────────────────────
-with st.expander("🔍 API 디버그 정보 (확인 후 삭제 예정)", expanded=True):
-    st.write("**실제 컬럼:**", list(df_raw_loaded.columns))
-    if "tags" in df_raw_loaded.columns:
-        sample_tag = df_raw_loaded["tags"].dropna().iloc[0] if not df_raw_loaded["tags"].dropna().empty else None
-        st.write("**tags 샘플:**", sample_tag)
-        st.write("**tags 타입:**", str(type(sample_tag)))
-    else:
-        st.write("❌ tags 컬럼 없음!")
-    if "genres" in df_raw_loaded.columns:
-        st.write("**genres 샘플 5개:**", df_raw_loaded["genres"].head().tolist())
-
 
 df_raw = preprocess(df_raw_loaded)
 
@@ -569,52 +557,39 @@ with col3:
     st.plotly_chart(fig_ratio, use_container_width=True)
 
 with col4:
-    st.markdown("#### 장르별 평균 긍정 비율 TOP 10")
+    st.markdown("#### ⏱️ 평균 플레이타임 TOP 10")
 
-    genre_rows = [
-        {"genre": g, "positive_ratio": row["positive_ratio"]}
-        for _, row in df.iterrows()
-        for g in row["genres_list"]
-        if g
-    ]
-    if not genre_rows:
-        st.caption("태그 데이터가 없습니다.")
-    else:
-        genre_df  = pd.DataFrame(genre_rows)
-        genre_agg = (
-            genre_df.groupby("genre")["positive_ratio"]
-            .agg(mean="mean", count="count")
-            .reset_index()
+    if "average_forever" in df.columns:
+        playtime_df = df[df["average_forever"] > 0].copy()
+        playtime_df["playtime_h"] = (playtime_df["average_forever"] / 60).round(1)
+        top_play = playtime_df.nlargest(10, "playtime_h")[["name", "playtime_h"]].copy()
+        top_play["label"] = top_play["name"].str[:30]
+
+        fig_play = go.Figure(
+            go.Bar(
+                x=top_play["playtime_h"],
+                y=top_play["label"],
+                orientation="h",
+                marker=dict(
+                    color=top_play["playtime_h"],
+                    colorscale=[[0, ACCENT_DARK], [1, ACCENT_LIGHT]],
+                    showscale=False,
+                ),
+                text=top_play["playtime_h"].apply(lambda v: f"{v:,.0f}h"),
+                textposition="outside",
+                textfont=dict(color=FONT_COLOR, size=11),
+            )
         )
-        # count 1 이상만 (SteamSpy 태그는 다양해서 엄격하게 걸면 빔)
-        genre_top = genre_agg[genre_agg["count"] >= 1].nlargest(10, "mean")
-
-        if genre_top.empty:
-            st.caption("표시할 태그 데이터가 없습니다.")
-        else:
-            fig_genre = go.Figure(
-                go.Bar(
-                    x=genre_top["mean"],
-                    y=genre_top["genre"],
-                    orientation="h",
-                    marker=dict(
-                        color=genre_top["mean"],
-                        colorscale=[[0, ACCENT_DARK], [1, ACCENT_LIGHT]],
-                        showscale=False,
-                    ),
-                    text=genre_top["mean"].apply(lambda v: f"{v:.1f}%"),
-                    textposition="outside",
-                    textfont=dict(color=FONT_COLOR, size=11),
-                )
-            )
-            fig_genre.update_layout(
-                **base_layout(),
-                xaxis=dict(gridcolor=GRID_COLOR, title="평균 긍정 비율 (%)", range=[0, 108]),
-                yaxis=dict(gridcolor=GRID_COLOR, autorange="reversed"),
-                height=360,
-                margin=dict(l=10, r=70, t=30, b=20),
-            )
-            st.plotly_chart(fig_genre, use_container_width=True)
+        fig_play.update_layout(
+            **base_layout(),
+            xaxis=dict(gridcolor=GRID_COLOR, title="평균 플레이타임 (시간)"),
+            yaxis=dict(gridcolor=GRID_COLOR, autorange="reversed"),
+            height=360,
+            margin=dict(l=10, r=70, t=30, b=20),
+        )
+        st.plotly_chart(fig_play, use_container_width=True)
+    else:
+        st.caption("플레이타임 데이터가 없습니다.")
 
 st.markdown("---")
 
