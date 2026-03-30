@@ -396,9 +396,22 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame | None:
 
 def get_all_genres(df: pd.DataFrame) -> list[str]:
     genres: set[str] = set()
-    for gl in df["genres_list"]:
-        genres.update(gl)
-    return sorted(genres - {""})
+
+    # 1️⃣ 기존 방식 (genres_list)
+    if "genres_list" in df.columns:
+        for gl in df["genres_list"]:
+            if isinstance(gl, list):
+                genres.update(gl)
+
+    # 2️⃣ fallback (genres 문자열 직접 파싱)
+    if not genres and "genres" in df.columns:
+        for val in df["genres"].dropna():
+            for g in str(val).replace(",", ";").split(";"):
+                g = g.strip()
+                if g:
+                    genres.add(g)
+
+    return sorted(genres)
 
 
 def base_layout() -> dict:
