@@ -4,6 +4,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
 import io
+import json
 
 # ══════════════════════════════════════════════════════════════════════════════
 # 페이지 기본 설정
@@ -218,8 +219,13 @@ def load_data() -> pd.DataFrame:
         errors="coerce"
     ).fillna(0) / 100
 
-    # tags 딕셔너리 → 상위 5개 태그를 세미콜론 연결 → genres 대용
+    # tags: dict 또는 JSON 문자열 모두 처리 → 상위 5개 태그를 세미콜론 연결
     def tags_to_genres(val) -> str:
+        if isinstance(val, str):
+            try:
+                val = json.loads(val)
+            except Exception:
+                return val  # 이미 "Action;RPG" 형태면 그대로 사용
         if not isinstance(val, dict) or not val:
             return ""
         top = sorted(val.items(), key=lambda x: x[1], reverse=True)[:5]
@@ -549,7 +555,7 @@ with col4:
         if g
     ]
     if not genre_rows:
-        genre_top = pd.DataFrame(columns=["genre", "mean", "count"])
+        st.caption("태그 데이터가 없습니다.")
     else:
         genre_df  = pd.DataFrame(genre_rows)
         genre_agg = (
@@ -557,31 +563,35 @@ with col4:
             .agg(mean="mean", count="count")
             .reset_index()
         )
-        genre_top = genre_agg[genre_agg["count"] >= 2].nlargest(10, "mean")
+        # count 1 이상만 (SteamSpy 태그는 다양해서 엄격하게 걸면 빔)
+        genre_top = genre_agg[genre_agg["count"] >= 1].nlargest(10, "mean")
 
-    fig_genre = go.Figure(
-        go.Bar(
-            x=genre_top["mean"],
-            y=genre_top["genre"],
-            orientation="h",
-            marker=dict(
-                color=genre_top["mean"],
-                colorscale=[[0, ACCENT_DARK], [1, ACCENT_LIGHT]],
-                showscale=False,
-            ),
-            text=genre_top["mean"].apply(lambda v: f"{v:.1f}%"),
-            textposition="outside",
-            textfont=dict(color=FONT_COLOR, size=11),
-        )
-    )
-    fig_genre.update_layout(
-        **base_layout(),
-        xaxis=dict(gridcolor=GRID_COLOR, title="평균 긍정 비율 (%)", range=[0, 108]),
-        yaxis=dict(gridcolor=GRID_COLOR, autorange="reversed"),
-        height=360,
-        margin=dict(l=10, r=70, t=30, b=20),
-    )
-    st.plotly_chart(fig_genre, use_container_width=True)
+        if genre_top.empty:
+            st.caption("표시할 태그 데이터가 없습니다.")
+        else:
+            fig_genre = go.Figure(
+                go.Bar(
+                    x=genre_top["mean"],
+                    y=genre_top["genre"],
+                    orientation="h",
+                    marker=dict(
+                        color=genre_top["mean"],
+                        colorscale=[[0, ACCENT_DARK], [1, ACCENT_LIGHT]],
+                        showscale=False,
+                    ),
+                    text=genre_top["mean"].apply(lambda v: f"{v:.1f}%"),
+                    textposition="outside",
+                    textfont=dict(color=FONT_COLOR, size=11),
+                )
+            )
+            fig_genre.update_layout(
+                **base_layout(),
+                xaxis=dict(gridcolor=GRID_COLOR, title="평균 긍정 비율 (%)", range=[0, 108]),
+                yaxis=dict(gridcolor=GRID_COLOR, autorange="reversed"),
+                height=360,
+                margin=dict(l=10, r=70, t=30, b=20),
+            )
+            st.plotly_chart(fig_genre, use_container_width=True)
 
 st.markdown("---")
 
