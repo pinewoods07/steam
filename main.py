@@ -183,7 +183,8 @@ def parse_owners(owners_str: str) -> int:
 def load_data() -> pd.DataFrame:
     """
     데이터 로딩 우선순위:
-      1) SteamSpy API — page 0~4 (최대 5,000개 게임, 무료·인증 불필요)
+      1) SteamSpy API all 엔드포인트 (page 0~2, 최대 3,000개)
+         - genre는 all에서 제공 안 됨 → tags 딕셔너리 상위 5개를 genres 대용으로 사용
       2) 실패 시 코드 내장 샘플 데이터 사용
     """
     import requests
@@ -191,12 +192,12 @@ def load_data() -> pd.DataFrame:
     STEAMSPY_URL = "https://steamspy.com/api.php"
     records: list[dict] = []
 
-    for page in range(5):
+    for page in range(3):
         try:
             resp = requests.get(
                 STEAMSPY_URL,
                 params={"request": "all", "page": page},
-                timeout=15,
+                timeout=20,
             )
             resp.raise_for_status()
             data = resp.json()
@@ -210,10 +211,27 @@ def load_data() -> pd.DataFrame:
         return pd.read_csv(io.StringIO(SAMPLE_CSV))
 
     df = pd.DataFrame(records)
-    df = df.rename(columns={"genre": "genres"})
-    df["price"] = pd.to_numeric(df.get("price", 0), errors="coerce").fillna(0) / 100
+
+    # price: 센트 → 달러
+    df["price"] = pd.to_numeric(
+        df["price"] if "price" in df.columns else 0,
+        errors="coerce"
+    ).fillna(0) / 100
+
+    # tags 딕셔너리 → 상위 5개 태그를 세미콜론 연결 → genres 대용
+    def tags_to_genres(val) -> str:
+        if not isinstance(val, dict) or not val:
+            return ""
+        top = sorted(val.items(), key=lambda x: x[1], reverse=True)[:5]
+        return ";".join(t[0] for t in top)
+
+    if "tags" in df.columns:
+        df["genres"] = df["tags"].apply(tags_to_genres)
+    else:
+        df["genres"] = ""
 
     return df
+
 
 
 def preprocess(df: pd.DataFrame) -> pd.DataFrame | None:
