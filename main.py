@@ -218,13 +218,17 @@ def load_data() -> pd.DataFrame:
 
 def preprocess(df: pd.DataFrame) -> pd.DataFrame | None:
     """전처리: 타입 변환, owners 평균화, 리뷰 비율 계산, 장르 리스트화."""
+    df = df.copy()
+
+    # SteamSpy는 'genre'(단수) 로 반환 → 통일
+    if "genre" in df.columns and "genres" not in df.columns:
+        df = df.rename(columns={"genre": "genres"})
+
     required = {"name", "price", "genres", "positive", "negative", "owners"}
     missing  = required - set(df.columns)
     if missing:
         st.error(f"⚠️ 필수 컬럼 누락: {missing}")
         return None
-
-    df = df.copy()
     df["genres"] = df["genres"].fillna("")   # SteamSpy: 장르 없는 게임 처리
     df = df.dropna(subset=["name"]).copy()
     df["price"]    = pd.to_numeric(df["price"],    errors="coerce").fillna(0)
