@@ -244,7 +244,6 @@ def base_layout() -> dict:
         paper_bgcolor=PLOT_BG,
         plot_bgcolor=CHART_BG,
         font=dict(color=FONT_COLOR, family="Segoe UI, sans-serif"),
-        margin=dict(l=10, r=10, t=30, b=20),
     )
 
 
@@ -417,6 +416,7 @@ with col2:
         height=420,
         bargap=0.04,
         showlegend=False,
+        margin=dict(l=10, r=10, t=30, b=20),
     )
     st.plotly_chart(fig_hist, use_container_width=True)
 
@@ -463,6 +463,7 @@ fig_scatter.update_layout(
         titlefont=dict(color=FONT_COLOR),
     ),
     height=470,
+    margin=dict(l=10, r=10, t=30, b=20),
 )
 st.plotly_chart(fig_scatter, use_container_width=True)
 st.markdown("---")
@@ -497,6 +498,7 @@ with col3:
         height=360,
         bargap=0.04,
         showlegend=False,
+        margin=dict(l=10, r=10, t=30, b=20),
     )
     st.plotly_chart(fig_ratio, use_container_width=True)
 
