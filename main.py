@@ -51,8 +51,36 @@ st.markdown("""
     .stSelectbox > div > div,
     .stMultiSelect > div > div {
         background-color: #2a475e !important;
-        color: #c7d5e0 !important;
+        color: #ffffff !important;
         border-color: #4a90a4 !important;
+    }
+
+    /* selectbox 드롭다운 옵션 텍스트 */
+    [data-baseweb="select"] span,
+    [data-baseweb="select"] div,
+    [data-baseweb="menu"] li,
+    [data-baseweb="menu"] div,
+    [role="listbox"] li,
+    [role="option"],
+    .stSelectbox [data-testid="stMarkdownContainer"],
+    div[data-baseweb="select"] > div > div {
+        color: #ffffff !important;
+        background-color: #2a475e !important;
+    }
+
+    /* 드롭다운 메뉴 배경 */
+    [data-baseweb="popover"] {
+        background-color: #1b2838 !important;
+    }
+
+    [data-baseweb="menu"] {
+        background-color: #1b2838 !important;
+    }
+
+    /* 멀티셀렉트 태그 */
+    .stMultiSelect span[data-baseweb="tag"] {
+        background-color: #4a90a4 !important;
+        color: #ffffff !important;
     }
 
     /* 슬라이더 */
@@ -180,6 +208,19 @@ def parse_owners(owners_str: str) -> int:
         return 0
 
 
+def tags_to_genres(val) -> str:
+    if isinstance(val, str):
+        try:
+            import json as _json
+            val = _json.loads(val)
+        except Exception:
+            return val
+    if not isinstance(val, dict) or not val:
+        return ""
+    top = sorted(val.items(), key=lambda x: x[1], reverse=True)[:5]
+    return ";".join(t[0] for t in top)
+
+
 @st.cache_data(show_spinner=False, ttl=86400)
 def load_data() -> pd.DataFrame:
     """
@@ -199,18 +240,6 @@ def load_data() -> pd.DataFrame:
             return r.json()
         except Exception:
             return {}
-
-    def tags_to_genres(val) -> str:
-        if isinstance(val, str):
-            try:
-                import json as _json
-                val = _json.loads(val)
-            except Exception:
-                return val
-        if not isinstance(val, dict) or not val:
-            return ""
-        top = sorted(val.items(), key=lambda x: x[1], reverse=True)[:5]
-        return ";".join(t[0] for t in top)
 
     # ── 1단계: tags 포함된 엔드포인트로 기준 데이터 수집 ──────────────────────
     rich: dict = {}
@@ -407,7 +436,7 @@ with st.sidebar:
     # ── 게임 이름 직접 검색 ────────────────────────────────────────────────
     search_query = st.text_input(
         "🔎 게임 이름 검색",
-        placeholder="예: 산나비, Undertale...",
+        placeholder="",
         key="game_search_input",
     )
 
