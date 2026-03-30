@@ -548,13 +548,16 @@ with col4:
         for g in row["genres_list"]
         if g
     ]
-    genre_df  = pd.DataFrame(genre_rows)
-    genre_agg = (
-        genre_df.groupby("genre")["positive_ratio"]
-        .agg(mean="mean", count="count")
-        .reset_index()
-    )
-    genre_top = genre_agg[genre_agg["count"] >= 2].nlargest(10, "mean")
+    if not genre_rows:
+        genre_top = pd.DataFrame(columns=["genre", "mean", "count"])
+    else:
+        genre_df  = pd.DataFrame(genre_rows)
+        genre_agg = (
+            genre_df.groupby("genre")["positive_ratio"]
+            .agg(mean="mean", count="count")
+            .reset_index()
+        )
+        genre_top = genre_agg[genre_agg["count"] >= 2].nlargest(10, "mean")
 
     fig_genre = go.Figure(
         go.Bar(
