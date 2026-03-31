@@ -299,7 +299,7 @@ with st.sidebar:
     )
     st.markdown("---")
     st.markdown("### 🔍 게임 상세 정보")
-    st.caption("목록에서 선택하거나, 이름으로 직접 검색하세요.")
+    st.caption("아래에서 이름으로 직접 검색하세요.")
 
     search_query = st.text_input(
         "🔎 게임 이름 검색",
