@@ -366,12 +366,7 @@ if df.empty:
     st.warning("⚠️ 조건에 맞는 게임이 없습니다. 필터를 조정해주세요.")
     st.stop()
 
-with st.sidebar:
-    selected_game = st.selectbox(
-        "게임 선택",
-        options=df["name"].tolist(),
-        index=0,
-    )
+
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -512,27 +507,13 @@ st.markdown("---")
 # ── 섹션 5: 게임 상세 정보
 st.markdown("### 🕹️ 게임 상세 정보")
 
-if searched_game_data is not None:
-    game       = searched_game_data
-    detail_src = "🔎 검색 결과"
-else:
-    game       = df[df["name"] == selected_game].iloc[0]
-    detail_src = "📋 목록 선택"
-    # 장르 없으면 appdetails로 자동 보완
-    if not game["genres_list"] and "appid" in game and pd.notna(game["appid"]):
-        with st.spinner("장르 정보 불러오는 중..."):
-            _raw = fetch_game_by_appid(int(game["appid"]))
-        if _raw:
-            _processed = preprocess(pd.DataFrame([_raw]))
-            if _processed is not None and not _processed.empty:
-                _row = _processed.iloc[0]
-                if _row["genres_list"]:
-                    game = game.copy()
-                    game["genres_list"] = _row["genres_list"]
-                    game["genres"]      = _row["genres"]
+if searched_game_data is None:
+    st.info("👈 사이드바에서 게임을 검색해보세요!")
+    st.stop()
 
+game = searched_game_data
 st.markdown(
-    f"**{game['name']}** <span style='color:#4a90a4; font-size:0.8em;'>({detail_src})</span>",
+    f"**{game['name']}** <span style='color:#4a90a4; font-size:0.8em;'>(🔎 검색 결과)</span>",
     unsafe_allow_html=True,
 )
 
