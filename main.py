@@ -303,7 +303,7 @@ with st.sidebar:
 
     search_query = st.text_input(
         "🔎 게임 이름 검색",
-        placeholder="두 글자 이상 입력하면 자동으로 검색돼요",
+        placeholder="ex) Undertale",
         key="game_search_input",
     )
 
