@@ -47,6 +47,30 @@ st.markdown("""
     hr { border-color: #4a90a4 !important; }
     .stAlert { background-color: #2a475e !important; }
     footer { visibility: hidden; }
+
+    /* 최소 리뷰 수 원형 프리셋 버튼 */
+    div[data-testid="stSidebar"] .dot-btn button {
+        border-radius: 50% !important;
+        width: 46px !important;
+        height: 46px !important;
+        min-height: 46px !important;
+        padding: 0 !important;
+        font-size: 0 !important;
+        background: radial-gradient(circle, #1e3a1e 60%, #0d1f0d 100%) !important;
+        border: 2px solid #aaff44 !important;
+        box-shadow: 0 0 10px #aaff4466, inset 0 0 6px #aaff4422 !important;
+        cursor: pointer !important;
+        transition: all 0.2s !important;
+        display: block !important;
+        margin: 0 auto !important;
+    }
+    div[data-testid="stSidebar"] .dot-btn button:hover,
+    div[data-testid="stSidebar"] .dot-btn button:focus {
+        background: radial-gradient(circle, #aaff44 30%, #66cc00 100%) !important;
+        box-shadow: 0 0 18px #aaff44cc, 0 0 6px #aaff44 !important;
+        transform: scale(1.12) !important;
+        border-color: #ccff77 !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -283,11 +307,21 @@ with st.sidebar:
 
 
     st.markdown("**📝 최소 리뷰 수**")
-    preset_cols = st.columns(4)
     presets = [("전체", 0), ("50", 50), ("500", 500), ("5000", 5000)]
+    preset_cols = st.columns(4)
     for i, (label, val) in enumerate(presets):
-        if preset_cols[i].button(label, use_container_width=True, key=f"preset_{val}"):
-            st.session_state["min_reviews"] = val
+        with preset_cols[i]:
+            # 라벨 (숫자/텍스트) 위에
+            st.markdown(
+                f"<div style='text-align:center;color:#aaff44;font-size:0.75em;"
+                f"font-weight:600;margin-bottom:4px;letter-spacing:0.02em'>{label}</div>",
+                unsafe_allow_html=True,
+            )
+            # 원형 버튼 (점처럼)
+            st.markdown('<div class="dot-btn">', unsafe_allow_html=True)
+            if st.button("●", key=f"preset_{val}", use_container_width=False):
+                st.session_state["min_reviews"] = val
+            st.markdown('</div>', unsafe_allow_html=True)
 
     custom_val = st.number_input(
         "직접 입력",
