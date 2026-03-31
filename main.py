@@ -71,7 +71,7 @@ Portal 2,9.99,Action;Adventure,780000,8500,10000000 - 20000000,300
 """
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 모듈 레벨 헬퍼 (load_data / fetch_game_by_appid 모두에서 사용)
+# 모듈 레벨 헬퍼
 # ══════════════════════════════════════════════════════════════════════════════
 
 def tags_to_genres(val) -> str:
@@ -80,7 +80,7 @@ def tags_to_genres(val) -> str:
         try:
             val = json.loads(val)
         except Exception:
-            return val  # 이미 "Action;RPG" 형태면 그대로 반환
+            return val
     if not isinstance(val, dict) or not val:
         return ""
     top = sorted(val.items(), key=lambda x: x[1], reverse=True)[:5]
@@ -104,13 +104,6 @@ def parse_owners(owners_str: str) -> int:
 
 @st.cache_data(show_spinner=False, ttl=86400)
 def load_data() -> pd.DataFrame:
-    """
-    SteamSpy API:
-      1) top100forever / top100in2weeks / top100owned → tags 포함 풀 데이터
-      2) all (page 0~19) → 약 19,000개 게임, tags 없음
-      rich 데이터로 bulk 덮어써서 tags 보존.
-      폴백: 내장 샘플 데이터
-    """
     import requests
 
     BASE = "https://steamspy.com/api.php"
@@ -123,12 +116,10 @@ def load_data() -> pd.DataFrame:
         except Exception:
             return {}
 
-    # ── 1단계: tags 포함 엔드포인트 ───────────────────────────────────────────
     rich: dict = {}
     for req in ("top100forever", "top100in2weeks", "top100owned"):
         rich.update(fetch({"request": req}))
 
-    # ── 2단계: all 엔드포인트 (page 0~19, 최대 ~19,000개) ────────────────────
     bulk: dict = {}
     for page in range(20):
         data = fetch({"request": "all", "page": page})
@@ -136,7 +127,6 @@ def load_data() -> pd.DataFrame:
             break
         bulk.update(data)
 
-    # rich(tags 있는 게임)로 bulk 덮어쓰기
     bulk.update(rich)
     records = list(bulk.values())
 
@@ -145,16 +135,11 @@ def load_data() -> pd.DataFrame:
 
     df = pd.DataFrame(records)
 
-    # price: 센트 → 달러
     if "price" in df.columns:
         df["price"] = pd.to_numeric(df["price"], errors="coerce").fillna(0) / 100
     else:
         df["price"] = 0.0
 
-    # genres 합성:
-    #   - tags 컬럼(rich 게임): tags_to_genres 변환
-    #   - genres 컬럼(all 게임): SteamSpy가 비워서 줌 → 그대로 사용
-    #   tags 결과가 있으면 우선, 없으면 기존 genres 값 사용
     genre_from_tags = (
         df["tags"].apply(tags_to_genres)
         if "tags" in df.columns
@@ -198,7 +183,6 @@ def fetch_game_by_appid(appid: int) -> dict | None:
         data = r.json()
         if "price" in data:
             data["price"] = int(data.get("price", 0) or 0) / 100
-        # tags → genres (tags_to_genres는 이제 모듈 레벨)
         genre = tags_to_genres(data.get("tags", {}))
         if not genre and data.get("genre"):
             genre = data["genre"]
@@ -212,7 +196,6 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame | None:
     """전처리: 타입 변환, owners 평균화, 리뷰 비율 계산, 장르 리스트화."""
     df = df.copy()
 
-    # genres 컬럼 보장
     if "genres" not in df.columns:
         df["genres"] = ""
     df["genres"] = df["genres"].fillna("")
@@ -238,13 +221,6 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame | None:
         lambda x: [g.strip() for g in x if g.strip()] if isinstance(x, list) else []
     )
     return df
-
-
-def get_all_genres(df: pd.DataFrame) -> list[str]:
-    genres: set[str] = set()
-    for gl in df["genres_list"]:
-        genres.update(gl)
-    return sorted(genres - {""})
 
 
 def base_layout() -> dict:
@@ -280,15 +256,6 @@ with st.sidebar:
     st.success(f"✅ {total_games:,}개 게임 로드 완료")
     st.markdown("---")
 
-    all_genres      = get_all_genres(df_raw)
-    selected_genres = st.multiselect(
-        "🎯 장르 필터",
-        options=all_genres,
-        default=[],
-        placeholder="전체 장르",
-    )
-    st.markdown("---")
-
     max_slider = int(df_raw["total_reviews"].quantile(0.95))
     min_reviews = st.slider(
         "📝 최소 리뷰 수",
@@ -308,7 +275,6 @@ with st.sidebar:
 
     searched_game_data = None
 
-    # 2글자 이상이면 자동으로 검색 (버튼 없음)
     if len(search_query) >= 2:
         with st.spinner("검색 중..."):
             search_results = search_steam_games(search_query)
@@ -322,7 +288,6 @@ with st.sidebar:
             )
             chosen_idx   = result_names.index(chosen_name)
             chosen_appid = search_results[chosen_idx]["id"]
-            # 선택이 바뀌면 바로 session_state 업데이트
             if (st.session_state.get("detail_appid") != chosen_appid):
                 st.session_state["detail_appid"] = chosen_appid
                 st.session_state["detail_name"]  = chosen_name
@@ -332,7 +297,6 @@ with st.sidebar:
     elif search_query:
         st.caption("두 글자 이상 입력해주세요")
 
-    # 검색 초기화 버튼 (검색어 있을 때만)
     if "detail_appid" in st.session_state and not search_query:
         if st.button("❌ 검색 초기화", use_container_width=True):
             del st.session_state["detail_appid"]
@@ -355,17 +319,9 @@ with st.sidebar:
 # ══════════════════════════════════════════════════════════════════════════════
 df = df_raw[df_raw["total_reviews"] >= min_reviews].copy()
 
-if selected_genres:
-    mask = df["genres_list"].apply(
-        lambda gl: any(g in gl for g in selected_genres)
-    )
-    df = df[mask]
-
 if df.empty:
     st.warning("⚠️ 조건에 맞는 게임이 없습니다. 필터를 조정해주세요.")
     st.stop()
-
-
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -561,7 +517,6 @@ with g2:
 
     with info_col1:
         st.markdown("**🎯 장르**")
-        # genres_list 우선, 없으면 raw genres 문자열, 그것도 없으면 정보 없음
         if game["genres_list"]:
             genres_str = ", ".join(game["genres_list"])
         elif game.get("genres"):
