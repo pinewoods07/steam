@@ -21,107 +21,106 @@ st.set_page_config(
 # ══════════════════════════════════════════════════════════════════════════════
 st.markdown("""
 <style>
-    /* 전체 앱 배경 */
-    .stApp { background-color: #1b2838; color: #e8eef2; }
+    /* ── 전체 배경 & 기본 텍스트 ── */
+    .stApp, .stApp * { background-color: #1b2838; color: #e8f0f7; }
+    [data-testid="stSidebar"], [data-testid="stSidebar"] * {
+        background-color: #171a21 !important;
+        color: #e8f0f7 !important;
+    }
 
-    /* 사이드바 */
-    [data-testid="stSidebar"] { background-color: #171a21 !important; }
-    [data-testid="stSidebar"] * { color: #e8eef2 !important; }
+    /* ── 제목 ── */
+    h1, h2, h3, h4, h1 *, h2 *, h3 *, h4 * { color: #66c0f4 !important; }
 
-    /* 제목 */
-    h1, h2, h3, h4 { color: #66c0f4 !important; }
-
-    /* 일반 텍스트 - 밝게 */
-    p, label, div, span, .stMarkdown { color: #e8eef2 !important; }
-
-    /* 텍스트 인풋 */
-    input, textarea {
+    /* ── 텍스트 입력 ── */
+    input, textarea,
+    [data-baseweb="input"] input {
         background-color: #2a475e !important;
         color: #ffffff !important;
-        border-color: #4a90a4 !important;
-    }
-    input::placeholder { color: #8fb8d1 !important; }
-
-    /* 메트릭 카드 */
-    [data-testid="metric-container"] {
-        background-color: #2a475e;
-        border: 1px solid #4a90a4;
-        border-radius: 8px;
-        padding: 16px;
-    }
-    [data-testid="metric-container"] label { color: #a8c8e0 !important; }
-    [data-testid="metric-container"] [data-testid="stMetricValue"] {
-        color: #66c0f4 !important;
-        font-size: 1.6rem !important;
-    }
-
-    /* selectbox / multiselect 컨테이너 */
-    .stSelectbox > div > div,
-    .stMultiSelect > div > div {
-        background-color: #2a475e !important;
-        color: #ffffff !important;
-        border: 1.5px solid #66c0f4 !important;
+        border: 1.5px solid #4a90a4 !important;
         border-radius: 6px !important;
     }
 
-    /* 드롭다운 선택된 값 텍스트 */
+    /* ── 메트릭 카드 ── */
+    [data-testid="metric-container"] {
+        background-color: #2a475e !important;
+        border: 1px solid #4a90a4 !important;
+        border-radius: 8px !important;
+        padding: 16px !important;
+    }
+    [data-testid="metric-container"] * { color: #e8f0f7 !important; }
+    [data-testid="stMetricValue"] { color: #66c0f4 !important; font-size: 1.6rem !important; }
+
+    /* ── 셀렉트박스 & 멀티셀렉트: 컨테이너 ── */
+    [data-baseweb="select"],
+    [data-baseweb="select"] > div {
+        background-color: #2a475e !important;
+        border: 1.5px solid #66c0f4 !important;
+        border-radius: 6px !important;
+    }
+    /* 선택된 값 / 입력 텍스트 */
+    [data-baseweb="select"] input,
     [data-baseweb="select"] [data-testid="stMarkdownContainer"] p,
     [data-baseweb="select"] span,
-    [data-baseweb="select"] div { color: #ffffff !important; }
+    [data-baseweb="select"] div {
+        background-color: #2a475e !important;
+        color: #ffffff !important;
+    }
 
-    /* 드롭다운 팝오버 메뉴 전체 */
-    [data-baseweb="popover"],
-    [data-baseweb="popover"] * { background-color: #1e3248 !important; }
-
-    /* 드롭다운 옵션 텍스트 */
-    [data-baseweb="menu"],
-    [data-baseweb="menu"] * { color: #e8eef2 !important; font-size: 0.95rem !important; }
-    [role="option"], [role="option"] * { color: #e8eef2 !important; }
+    /* ── 드롭다운 팝오버 & 옵션 ── */
+    [data-baseweb="popover"] > div,
+    ul[role="listbox"],
+    [data-baseweb="menu"] {
+        background-color: #1e3248 !important;
+        border: 1px solid #4a90a4 !important;
+        border-radius: 6px !important;
+    }
+    [data-baseweb="menu"] *,
+    li[role="option"],
+    li[role="option"] * {
+        background-color: #1e3248 !important;
+        color: #e8f0f7 !important;
+        font-size: 0.92rem !important;
+    }
     li[role="option"]:hover,
-    li[role="option"]:hover * { background-color: #2a6496 !important; color: #ffffff !important; }
+    li[role="option"]:hover * {
+        background-color: #2a6496 !important;
+        color: #ffffff !important;
+    }
 
-    /* 멀티셀렉트 선택된 태그 */
+    /* ── 멀티셀렉트 선택된 태그 ── */
     [data-baseweb="tag"] {
         background-color: #1a5276 !important;
         border: 1px solid #66c0f4 !important;
         border-radius: 4px !important;
+    }
+    [data-baseweb="tag"] *,
+    [data-baseweb="tag"] span { 
+        background-color: #1a5276 !important;
         color: #ffffff !important;
         font-weight: 600 !important;
-        font-size: 0.85rem !important;
     }
-    [data-baseweb="tag"] span { color: #ffffff !important; }
 
-    /* 멀티셀렉트 레이블 */
-    .stMultiSelect label,
-    .stSelectbox label {
+    /* ── 라벨 ── */
+    label, .stMultiSelect label, .stSelectbox label {
         color: #66c0f4 !important;
         font-weight: 600 !important;
-        font-size: 0.95rem !important;
     }
 
-    /* 슬라이더 */
-    .stSlider > div { color: #e8eef2 !important; }
+    /* ── 슬라이더 ── */
+    .stSlider * { color: #e8f0f7 !important; }
     .stSlider [data-baseweb="slider"] div[role="slider"] {
         background-color: #66c0f4 !important;
     }
-    /* 슬라이더 숫자 레이블 */
-    .stSlider [data-testid="stTickBarMin"],
-    .stSlider [data-testid="stTickBarMax"],
-    .stSlider p { color: #e8eef2 !important; }
 
-    /* caption / small text */
-    .stCaption, small, [data-testid="stCaptionContainer"] p {
-        color: #a8c8e0 !important;
-    }
+    /* ── caption ── */
+    .stCaption *, [data-testid="stCaptionContainer"] * { color: #a8c8e0 !important; }
 
-    /* success/warning/error 박스 */
-    .stAlert { background-color: #2a475e !important; }
-    .stAlert p, .stAlert div, .stAlert span { color: #ffffff !important; }
+    /* ── 알림 박스 ── */
+    .stAlert { background-color: #2a475e !important; border-color: #4a90a4 !important; }
+    .stAlert * { color: #ffffff !important; }
 
-    /* 구분선 */
+    /* ── 구분선 & 푸터 ── */
     hr { border-color: #4a90a4 !important; }
-
-    /* 푸터 */
     footer { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
@@ -267,22 +266,14 @@ def load_data() -> pd.DataFrame:
         except Exception:
             return {}
 
-    # ── 1단계: tags 포함된 엔드포인트로 기준 데이터 수집 ──────────────────────
+    # top100forever / top100in2weeks / top100owned 엔드포인트
+    # → genre 문자열 + tags dict 모두 포함 → 장르 필터 확실히 작동
     rich: dict = {}
     for req in ("top100forever", "top100in2weeks", "top100owned"):
-        rich.update(fetch({"request": req}))
+        chunk = fetch({"request": req})
+        rich.update(chunk)
 
-    # ── 2단계: all 엔드포인트로 게임 수 확장 (page 0~19, 약 5만 게임) ──────────
-    bulk: dict = {}
-    for page in range(20):
-        data = fetch({"request": "all", "page": page})
-        if not data:
-            break
-        bulk.update(data)
-
-    # rich 데이터로 bulk 덮어쓰기 (tags 보존)
-    bulk.update(rich)
-    records = list(bulk.values())
+    records = list(rich.values())
 
     if not records:
         return pd.read_csv(io.StringIO(SAMPLE_CSV))
@@ -295,14 +286,11 @@ def load_data() -> pd.DataFrame:
     else:
         df["price"] = 0.0
 
-    # ── 장르 합성: Steam 공식 genre(all) 우선, 없으면 tags 폴백 ────────────
-    # all 엔드포인트: 'genre' 문자열 → "Action, RPG" 형태, Steam 공식 카테고리
-    # rich 엔드포인트: 'tags' dict → 유저 정의 태그 (genre 없을 때만 사용)
-    genre_from_all  = df["genre"].fillna("").astype(str) if "genre" in df.columns else pd.Series("", index=df.index)
-    genre_from_tags = df["tags"].apply(tags_to_genres)   if "tags"  in df.columns else pd.Series("", index=df.index)
+    # ── 장르: genre 문자열 우선, 없으면 tags dict 변환 ───────────────────────
+    genre_from_field = df["genre"].fillna("").astype(str) if "genre" in df.columns else pd.Series("", index=df.index)
+    genre_from_tags  = df["tags"].apply(tags_to_genres)   if "tags"  in df.columns else pd.Series("", index=df.index)
 
-    # Steam 공식 genre 우선 사용 → 없을 때만 tags 폴백
-    df["genres"] = genre_from_all.where(genre_from_all.str.strip() != "", genre_from_tags)
+    df["genres"] = genre_from_field.where(genre_from_field.str.strip() != "", genre_from_tags)
 
     return df
 
