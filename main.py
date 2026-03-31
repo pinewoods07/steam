@@ -217,9 +217,9 @@ def load_data() -> pd.DataFrame:
     for req in ("top100forever", "top100in2weeks", "top100owned"):
         rich.update(fetch({"request": req}))
 
-    # ── 2단계: all 엔드포인트로 게임 수 확장 (page 0~19, 약 5만 게임) ──────────
+    # ── 2단계: all 엔드포인트로 게임 수 확장 (page 0~4) ──────────────────────
     bulk: dict = {}
-    for page in range(20):
+    for page in range(5):
         data = fetch({"request": "all", "page": page})
         if not data:
             break
@@ -240,67 +240,15 @@ def load_data() -> pd.DataFrame:
     else:
         df["price"] = 0.0
 
-    # ── 장르 합성: tags(rich) 우선, 없으면 genre(all) 사용 ──────────────────
-    # all 엔드포인트는 tags 없이 'genre' 문자열 필드를 반환함
-    # rich 엔드포인트는 'tags' dict 반환 → tags_to_genres 로 변환
-    # 두 필드를 합쳐서 최대한 장르 정보 보존
-    genre_from_all  = df["genre"].fillna("")  if "genre"  in df.columns else pd.Series("", index=df.index)
-    genre_from_tags = df["tags"].apply(tags_to_genres) if "tags" in df.columns else pd.Series("", index=df.index)
-
-    # tags 변환 결과가 있으면 우선 사용, 없으면 all의 genre 사용
-    df["genres"] = genre_from_tags.where(genre_from_tags != "", genre_from_all)
+    # tags → genres
+    if "tags" in df.columns:
+        df["genres"] = df["tags"].apply(tags_to_genres)
+    elif "genres" not in df.columns or df.get("genres", pd.Series(dtype=str)).eq("").all():
+        df["genres"] = ""
 
     return df
 
 
-
-
-@st.cache_data(show_spinner=False, ttl=3600)
-def search_steam_games(query: str) -> list[dict]:
-    """
-    Steam Store Search API로 게임 이름 검색.
-    반환: [{"id": appid, "name": "게임명"}, ...]
-    """
-    import requests
-    if not query.strip():
-        return []
-    try:
-        r = requests.get(
-            "https://store.steampowered.com/api/storesearch/",
-            params={"term": query, "l": "korean", "cc": "KR"},
-            timeout=10,
-        )
-        r.raise_for_status()
-        return r.json().get("items", [])[:10]
-    except Exception:
-        return []
-
-
-@st.cache_data(show_spinner=False, ttl=3600)
-def fetch_game_by_appid(appid: int) -> dict | None:
-    """
-    SteamSpy appdetails 엔드포인트로 특정 게임의 전체 데이터 가져오기.
-    tags, genre, owners, reviews 등 풀 데이터 반환.
-    """
-    import requests
-    try:
-        r = requests.get(
-            "https://steamspy.com/api.php",
-            params={"request": "appdetails", "appid": str(appid)},
-            timeout=15,
-        )
-        r.raise_for_status()
-        data = r.json()
-        # price: 센트 → 달러 변환
-        if "price" in data:
-            data["price"] = int(data.get("price", 0) or 0) / 100
-        # tags → genres 변환
-        data["genres"] = tags_to_genres(data.get("tags", {}))
-        if not data["genres"] and data.get("genre"):
-            data["genres"] = data["genre"]
-        return data
-    except Exception:
-        return None
 
 
 def preprocess(df: pd.DataFrame) -> pd.DataFrame | None:
@@ -316,7 +264,11 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame | None:
     if missing:
         st.error(f"⚠️ 필수 컬럼 누락: {missing}")
         return None
-    df["genres"] = df["genres"].fillna("")   # SteamSpy: 장르 없는 게임 처리
+    df["genres"] = df["genres"].fillna("")
+    # genres가 비어있는 행은 raw 'genre' 컬럼(SteamSpy all)으로 보완
+    if "genre" in df.columns:
+        mask_empty = df["genres"] == ""
+        df.loc[mask_empty, "genres"] = df.loc[mask_empty, "genre"].fillna("")
     df = df.dropna(subset=["name"]).copy()
     df["price"]    = pd.to_numeric(df["price"],    errors="coerce").fillna(0)
     df["positive"] = pd.to_numeric(df["positive"], errors="coerce").fillna(0).astype(int)
@@ -402,52 +354,6 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("### 🔍 게임 상세 정보")
-    st.caption("목록에서 선택하거나, 이름으로 직접 검색하세요.")
-
-    # ── 게임 이름 직접 검색 ────────────────────────────────────────────────
-    search_query = st.text_input(
-        "🔎 게임 이름 검색",
-        placeholder="예: 산나비, Undertale...",
-        key="game_search_input",
-    )
-
-    searched_game_data = None  # 검색 결과 게임 데이터 (전처리 완료)
-
-    if search_query:
-        with st.spinner("검색 중..."):
-            search_results = search_steam_games(search_query)
-
-        if search_results:
-            result_names = [f"{r['name']} (AppID: {r['id']})" for r in search_results]
-            chosen_result = st.selectbox(
-                "검색 결과",
-                options=result_names,
-                key="search_result_select",
-            )
-            chosen_idx  = result_names.index(chosen_result)
-            chosen_appid = search_results[chosen_idx]["id"]
-
-            if st.button("📋 이 게임 상세 보기", use_container_width=True):
-                st.session_state["detail_appid"] = chosen_appid
-                st.session_state["detail_name"]  = search_results[chosen_idx]["name"]
-        else:
-            st.warning("검색 결과가 없어요 😥")
-
-    # session_state에 저장된 검색 게임이 있으면 불러오기
-    if "detail_appid" in st.session_state:
-        with st.spinner(f"'{st.session_state['detail_name']}' 정보 불러오는 중..."):
-            raw = fetch_game_by_appid(st.session_state["detail_appid"])
-        if raw:
-            searched_game_data = preprocess(pd.DataFrame([raw]))
-            if searched_game_data is not None and not searched_game_data.empty:
-                searched_game_data = searched_game_data.iloc[0]
-                st.success(f"✅ {st.session_state['detail_name']}")
-            else:
-                searched_game_data = None
-        if st.button("❌ 검색 초기화", use_container_width=True):
-            del st.session_state["detail_appid"]
-            del st.session_state["detail_name"]
-            st.rerun()
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -694,17 +600,9 @@ st.markdown("---")
 
 # ── 섹션 5: 선택한 게임 상세 정보 ────────────────────────────────────────────
 st.markdown(f"### 🕹️ 게임 상세 정보")
+st.markdown(f"**{selected_game}**")
 
-# 검색된 게임이 있으면 우선 표시, 없으면 사이드바 드롭다운 게임 사용
-if searched_game_data is not None:
-    game        = searched_game_data
-    detail_src  = "🔎 검색 결과"
-else:
-    game        = df[df["name"] == selected_game].iloc[0]
-    detail_src  = "📋 목록 선택"
-
-st.markdown(f"**{game['name']}** <span style='color:#4a90a4; font-size:0.8em;'>({detail_src})</span>",
-            unsafe_allow_html=True)
+game = df[df["name"] == selected_game].iloc[0]
 
 d1, d2, d3, d4 = st.columns(4)
 
@@ -774,7 +672,12 @@ with g2:
 
     with info_col1:
         st.markdown("**🎯 장르**")
-        genres_str = ", ".join(game["genres_list"]) if game["genres_list"] else "정보 없음"
+        if game["genres_list"]:
+            genres_str = ", ".join(game["genres_list"])
+        elif game.get("genre"):
+            genres_str = str(game["genre"]).replace(";", ", ")
+        else:
+            genres_str = "정보 없음"
         st.markdown(genres_str)
 
         st.markdown(" ")
@@ -801,8 +704,3 @@ st.markdown(
     "</div>",
     unsafe_allow_html=True,
 )
-
-
-
-
-
