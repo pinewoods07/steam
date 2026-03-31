@@ -303,46 +303,52 @@ with st.sidebar:
 
     search_query = st.text_input(
         "🔎 게임 이름 검색",
-        placeholder="예: 산나비, Undertale...",
+        placeholder="두 글자 이상 입력하면 자동으로 검색돼요",
         key="game_search_input",
     )
 
     searched_game_data = None
 
-    if search_query:
+    # 2글자 이상이면 자동으로 검색 (버튼 없음)
+    if len(search_query) >= 2:
         with st.spinner("검색 중..."):
             search_results = search_steam_games(search_query)
 
         if search_results:
-            result_names = [f"{r['name']} (AppID: {r['id']})" for r in search_results]
-            chosen_result = st.selectbox(
-                "검색 결과",
+            result_names = [r["name"] for r in search_results]
+            chosen_name  = st.selectbox(
+                "검색 결과 (선택하면 바로 적용)",
                 options=result_names,
                 key="search_result_select",
             )
-            chosen_idx   = result_names.index(chosen_result)
+            chosen_idx   = result_names.index(chosen_name)
             chosen_appid = search_results[chosen_idx]["id"]
-
-            if st.button("📋 이 게임 상세 보기", use_container_width=True):
+            # 선택이 바뀌면 바로 session_state 업데이트
+            if (st.session_state.get("detail_appid") != chosen_appid):
                 st.session_state["detail_appid"] = chosen_appid
-                st.session_state["detail_name"]  = search_results[chosen_idx]["name"]
+                st.session_state["detail_name"]  = chosen_name
         else:
-            st.warning("검색 결과가 없어요 😥")
+            st.caption("검색 결과가 없어요 😥")
+
+    elif search_query:
+        st.caption("두 글자 이상 입력해주세요")
+
+    # 검색 초기화 버튼 (검색어 있을 때만)
+    if "detail_appid" in st.session_state and not search_query:
+        if st.button("❌ 검색 초기화", use_container_width=True):
+            del st.session_state["detail_appid"]
+            del st.session_state["detail_name"]
+            st.rerun()
 
     if "detail_appid" in st.session_state:
-        with st.spinner(f"'{st.session_state['detail_name']}' 정보 불러오는 중..."):
+        with st.spinner(f"'{st.session_state['detail_name']}' 불러오는 중..."):
             raw = fetch_game_by_appid(st.session_state["detail_appid"])
         if raw:
             searched_game_data = preprocess(pd.DataFrame([raw]))
             if searched_game_data is not None and not searched_game_data.empty:
                 searched_game_data = searched_game_data.iloc[0]
-                st.success(f"✅ {st.session_state['detail_name']}")
             else:
                 searched_game_data = None
-        if st.button("❌ 검색 초기화", use_container_width=True):
-            del st.session_state["detail_appid"]
-            del st.session_state["detail_name"]
-            st.rerun()
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -512,6 +518,18 @@ if searched_game_data is not None:
 else:
     game       = df[df["name"] == selected_game].iloc[0]
     detail_src = "📋 목록 선택"
+    # 장르 없으면 appdetails로 자동 보완
+    if not game["genres_list"] and "appid" in game and pd.notna(game["appid"]):
+        with st.spinner("장르 정보 불러오는 중..."):
+            _raw = fetch_game_by_appid(int(game["appid"]))
+        if _raw:
+            _processed = preprocess(pd.DataFrame([_raw]))
+            if _processed is not None and not _processed.empty:
+                _row = _processed.iloc[0]
+                if _row["genres_list"]:
+                    game = game.copy()
+                    game["genres_list"] = _row["genres_list"]
+                    game["genres"]      = _row["genres"]
 
 st.markdown(
     f"**{game['name']}** <span style='color:#4a90a4; font-size:0.8em;'>({detail_src})</span>",
