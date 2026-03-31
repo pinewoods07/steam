@@ -16,40 +16,121 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# ══════════════════════════════════════════════════════════════════════════════
+# Steam 스타일 CSS (실제 스팀 색상 팔레트 기반)
+# ══════════════════════════════════════════════════════════════════════════════
 st.markdown("""
 <style>
-    .stApp { background-color: #1b2838; color: #c7d5e0; }
+    /* ── 기본 폰트 & 배경 ── */
+    html, body, [class*="css"] {
+        font-family: 'Segoe UI', 'Malgun Gothic', sans-serif !important;
+    }
+    .stApp {
+        background-color: #1b2838;
+        color: #c7d5e0;
+        font-size: 15px;
+        line-height: 1.7;
+    }
+
+    /* ── 사이드바 ── */
     [data-testid="stSidebar"] { background-color: #171a21 !important; }
-    [data-testid="stSidebar"] * { color: #c7d5e0 !important; }
-    h1, h2, h3, h4 { color: #66c0f4 !important; }
-    p, label, div, span, .stMarkdown { color: #c7d5e0 !important; }
+    [data-testid="stSidebar"] * { color: #c7d5e0 !important; font-size: 14px !important; }
+    [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
+        font-size: 1.1rem !important;
+        letter-spacing: 0.03em;
+    }
+
+    /* ── 메인 헤딩 계층 ── */
+    h1 {
+        color: #66c0f4 !important;
+        font-size: 2rem !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.02em;
+        line-height: 1.25 !important;
+    }
+    h2 {
+        color: #66c0f4 !important;
+        font-size: 1.45rem !important;
+        font-weight: 600 !important;
+    }
+    h3 {
+        color: #66c0f4 !important;
+        font-size: 1.15rem !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.01em;
+    }
+    h4 {
+        color: #8fb8d1 !important;
+        font-size: 0.95rem !important;
+        font-weight: 600 !important;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    /* ── 본문 & 캡션 ── */
+    p, div, span, .stMarkdown { color: #c7d5e0 !important; }
+    small,
+    .stCaption,
+    [data-testid="stCaptionContainer"],
+    [data-testid="stCaptionContainer"] p {
+        color: #8fb8d1 !important;
+        font-size: 0.82rem !important;
+        line-height: 1.5 !important;
+    }
+
+    /* ── 메트릭 카드 ── */
     [data-testid="metric-container"] {
         background-color: #2a475e;
         border: 1px solid #4a90a4;
-        border-radius: 8px;
-        padding: 16px;
+        border-radius: 10px;
+        padding: 18px 20px;
     }
-    [data-testid="metric-container"] label { color: #8fb8d1 !important; }
+    [data-testid="metric-container"] label {
+        color: #8fb8d1 !important;
+        font-size: 0.78rem !important;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
     [data-testid="metric-container"] [data-testid="stMetricValue"] {
         color: #66c0f4 !important;
-        font-size: 1.6rem !important;
+        font-size: 1.8rem !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.02em;
+        line-height: 1.2 !important;
     }
+
+    /* ── 입력 위젯 ── */
     .stSelectbox > div > div,
     .stMultiSelect > div > div {
         background-color: #2a475e !important;
         color: #c7d5e0 !important;
         border-color: #4a90a4 !important;
+        font-size: 14px !important;
+    }
+    .stTextInput input {
+        background-color: #2a475e !important;
+        color: #e8f0f7 !important;
+        border-color: #4a90a4 !important;
+        font-size: 14px !important;
     }
     .stSlider > div { color: #c7d5e0 !important; }
     .stSlider [data-baseweb="slider"] div[role="slider"] {
         background-color: #66c0f4 !important;
     }
-    hr { border-color: #4a90a4 !important; }
-    .stAlert { background-color: #2a475e !important; }
+
+    /* ── 구분선 & 알림 ── */
+    hr { border-color: #3d6680 !important; }
+    .stAlert { background-color: #2a475e !important; font-size: 14px !important; }
+
+    /* ── 푸터 ── */
     footer { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
 
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 색상 & 테마 상수
+# ══════════════════════════════════════════════════════════════════════════════
 PLOT_BG      = "#1b2838"
 CHART_BG     = "#2a475e"
 FONT_COLOR   = "#c7d5e0"
@@ -57,38 +138,94 @@ GRID_COLOR   = "#3d6680"
 ACCENT_LIGHT = "#66c0f4"
 ACCENT_DARK  = "#2a6496"
 
-SAMPLE_CSV = """name,price,genres,positive,negative,owners,average_forever
-Counter-Strike 2,0,Action;Free to Play,1250000,320000,50000000 - 100000000,1200
-Dota 2,0,Action;Free to Play;Strategy,980000,450000,50000000 - 100000000,3000
-PUBG: BATTLEGROUNDS,29.99,Action;Massively Multiplayer,850000,280000,10000000 - 20000000,900
-Elden Ring,59.99,Action;RPG,620000,42000,5000000 - 10000000,600
-Cyberpunk 2077,59.99,Action;RPG,740000,190000,10000000 - 20000000,480
-The Witcher 3: Wild Hunt,39.99,Action;RPG,820000,24000,10000000 - 20000000,720
-Grand Theft Auto V,29.99,Action;Adventure,710000,130000,20000000 - 50000000,540
-Stardew Valley,14.99,RPG;Simulation;Indie,650000,14000,5000000 - 10000000,360
-Terraria,9.99,Action;Adventure;Indie,750000,11000,10000000 - 20000000,480
-Portal 2,9.99,Action;Adventure,780000,8500,10000000 - 20000000,300
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 샘플 데이터 (URL 로딩 실패 시 폴백)
+# ══════════════════════════════════════════════════════════════════════════════
+SAMPLE_CSV = """name,price,genres,positive,negative,owners
+Counter-Strike 2,0,Action;Free to Play,1250000,320000,50000000 - 100000000
+Dota 2,0,Action;Free to Play;Strategy,980000,450000,50000000 - 100000000
+PUBG: BATTLEGROUNDS,29.99,Action;Adventure;Massively Multiplayer,850000,280000,10000000 - 20000000
+Elden Ring,59.99,Action;RPG,620000,42000,5000000 - 10000000
+Red Dead Redemption 2,59.99,Action;Adventure,530000,28000,5000000 - 10000000
+Cyberpunk 2077,59.99,Action;RPG,740000,190000,10000000 - 20000000
+The Witcher 3: Wild Hunt,39.99,Action;RPG,820000,24000,10000000 - 20000000
+Grand Theft Auto V,29.99,Action;Adventure,710000,130000,20000000 - 50000000
+Stardew Valley,14.99,RPG;Simulation;Indie,650000,14000,5000000 - 10000000
+Terraria,9.99,Action;Adventure;Indie,750000,11000,10000000 - 20000000
+Portal 2,9.99,Action;Adventure,780000,8500,10000000 - 20000000
+Half-Life: Alyx,59.99,Action;Adventure,160000,6000,1000000 - 2000000
+Hollow Knight,14.99,Action;Indie,420000,7200,5000000 - 10000000
+Hades,24.99,Action;Indie;RPG,370000,6800,5000000 - 10000000
+Celeste,19.99,Indie;Platformer,280000,4500,2000000 - 5000000
+Disco Elysium,39.99,RPG;Adventure;Indie,120000,5500,1000000 - 2000000
+Baldur's Gate 3,59.99,RPG;Adventure,620000,18000,5000000 - 10000000
+Divinity: Original Sin 2,44.99,RPG;Strategy,290000,9000,2000000 - 5000000
+Dark Souls III,59.99,Action;RPG,450000,32000,5000000 - 10000000
+Sekiro: Shadows Die Twice,59.99,Action;Adventure,310000,18000,2000000 - 5000000
+Death Stranding,39.99,Action;Adventure,180000,24000,2000000 - 5000000
+Monster Hunter: World,29.99,Action;RPG,460000,22000,5000000 - 10000000
+Destiny 2,0,Action;Free to Play;Massively Multiplayer,380000,210000,5000000 - 10000000
+Apex Legends,0,Action;Free to Play;Massively Multiplayer,450000,180000,10000000 - 20000000
+Warframe,0,Action;Free to Play;Massively Multiplayer,320000,95000,5000000 - 10000000
+Path of Exile,0,Action;Free to Play;RPG,290000,55000,5000000 - 10000000
+Team Fortress 2,0,Action;Free to Play,520000,310000,10000000 - 20000000
+Among Us,4.99,Casual;Indie;Multiplayer,310000,28000,5000000 - 10000000
+Fall Guys,0,Casual;Free to Play;Indie,180000,45000,2000000 - 5000000
+Valheim,20.99,Action;Adventure;Indie,480000,14000,5000000 - 10000000
+Rust,39.99,Action;Adventure;Massively Multiplayer,560000,210000,5000000 - 10000000
+ARK: Survival Evolved,49.99,Action;Adventure;Massively Multiplayer,320000,220000,5000000 - 10000000
+Subnautica,29.99,Action;Adventure;Indie,380000,9000,5000000 - 10000000
+No Man's Sky,59.99,Action;Adventure;Simulation,240000,40000,2000000 - 5000000
+Satisfactory,35.99,Early Access;Indie;Simulation,210000,4200,2000000 - 5000000
+Factorio,35.00,Indie;Simulation;Strategy,260000,3800,2000000 - 5000000
+RimWorld,39.99,Indie;Simulation;Strategy,290000,11000,2000000 - 5000000
+Cities: Skylines,29.99,Simulation;Strategy,380000,14000,5000000 - 10000000
+Civilization VI,59.99,Strategy,310000,45000,5000000 - 10000000
+Total War: THREE KINGDOMS,59.99,Action;Strategy,130000,18000,1000000 - 2000000
+Crusader Kings III,49.99,RPG;Simulation;Strategy,185000,10500,2000000 - 5000000
+Hearts of Iron IV,39.99,Simulation;Strategy,290000,28000,2000000 - 5000000
+Stellaris,39.99,Simulation;Strategy;Indie,260000,24000,2000000 - 5000000
+Football Manager 2024,54.99,Simulation;Sports;Strategy,52000,12000,500000 - 1000000
+FIFA 23,59.99,Sports;Simulation,42000,38000,1000000 - 2000000
+Rocket League,0,Free to Play;Sports,550000,85000,10000000 - 20000000
+NBA 2K24,59.99,Sports;Simulation,14000,28000,500000 - 1000000
+Forza Horizon 5,59.99,Racing;Sports,160000,14000,1000000 - 2000000
+Need for Speed Heat,49.99,Racing;Sports,28000,9500,500000 - 1000000
+Euro Truck Simulator 2,19.99,Simulation;Indie,450000,7500,5000000 - 10000000
+Garry's Mod,9.99,Indie;Simulation,680000,14000,20000000 - 50000000
+The Sims 4,0,Free to Play;Life Sim;Simulation,120000,65000,5000000 - 10000000
+Minecraft Dungeons,19.99,Action;Adventure;RPG,42000,8500,500000 - 1000000
+It Takes Two,39.99,Action;Adventure;Co-op,145000,4200,2000000 - 5000000
+A Way Out,29.99,Action;Adventure;Co-op,78000,6500,1000000 - 2000000
+Phasmophobia,13.99,Early Access;Horror;Indie,320000,18000,2000000 - 5000000
+Resident Evil Village,39.99,Action;Adventure;Horror,180000,11000,2000000 - 5000000
+Dead by Daylight,19.99,Action;Horror,280000,110000,5000000 - 10000000
+Left 4 Dead 2,9.99,Action;Co-op,590000,14000,20000000 - 50000000
+Back 4 Blood,39.99,Action;Co-op,75000,28000,1000000 - 2000000
+Ori and the Will of the Wisps,29.99,Action;Adventure;Indie,130000,3200,1000000 - 2000000
+Cuphead,19.99,Action;Indie,220000,7800,2000000 - 5000000
+Shovel Knight: Treasure Trove,24.99,Action;Adventure;Indie,58000,1800,1000000 - 2000000
+Undertale,9.99,Indie;RPG,440000,9000,5000000 - 10000000
+Deltarune,0,Free to Play;Indie;RPG,82000,2100,1000000 - 2000000
+Dave the Diver,19.99,Adventure;Indie;RPG,145000,4500,1000000 - 2000000
+Vampire Survivors,4.99,Casual;Indie;RPG,280000,4200,5000000 - 10000000
+Slay the Spire,24.99,Indie;RPG;Strategy,350000,7800,5000000 - 10000000
+Luck be a Landlord,14.99,Casual;Indie;Strategy,38000,1200,500000 - 1000000
+Balatro,17.99,Casual;Indie;Strategy,120000,2100,1000000 - 2000000
 """
 
-# ══════════════════════════════════════════════════════════════════════════════
-# 모듈 레벨 헬퍼
-# ══════════════════════════════════════════════════════════════════════════════
 
-def tags_to_genres(val) -> str:
-    """tags dict(또는 JSON 문자열) → 상위 5개 태그를 세미콜론으로 연결."""
-    if isinstance(val, str):
-        try:
-            val = json.loads(val)
-        except Exception:
-            return val
-    if not isinstance(val, dict) or not val:
-        return ""
-    top = sorted(val.items(), key=lambda x: x[1], reverse=True)[:5]
-    return ";".join(t[0] for t in top)
-
+# ══════════════════════════════════════════════════════════════════════════════
+# 헬퍼 함수
+# ══════════════════════════════════════════════════════════════════════════════
 
 def parse_owners(owners_str: str) -> int:
-    """'2,000,000 .. 5,000,000' 또는 '1,000,000 - 2,000,000' → 평균 정수."""
+    """
+    SteamSpy: '2,000,000 .. 5,000,000'
+    구형 CSV: '1,000,000 - 2,000,000'
+    두 형식 모두 평균값 정수로 변환. 실패 시 0 반환.
+    """
     try:
         cleaned = str(owners_str).replace(",", "").replace("..", "-")
         parts   = cleaned.split("-")
@@ -98,12 +235,14 @@ def parse_owners(owners_str: str) -> int:
         return 0
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# 데이터 로딩
-# ══════════════════════════════════════════════════════════════════════════════
-
 @st.cache_data(show_spinner=False, ttl=86400)
 def load_data() -> pd.DataFrame:
+    """
+    SteamSpy API:
+      - top100forever / top100in2weeks / top100owned → 태그 포함 풀 데이터 (~300개)
+      - all (page 0~4) → 태그 없음, 게임 수 많음 → 이후 병합해 genres 보완
+      폴백: 내장 샘플 데이터
+    """
     import requests
 
     BASE = "https://steamspy.com/api.php"
@@ -116,17 +255,32 @@ def load_data() -> pd.DataFrame:
         except Exception:
             return {}
 
+    def tags_to_genres(val) -> str:
+        if isinstance(val, str):
+            try:
+                import json as _json
+                val = _json.loads(val)
+            except Exception:
+                return val
+        if not isinstance(val, dict) or not val:
+            return ""
+        top = sorted(val.items(), key=lambda x: x[1], reverse=True)[:5]
+        return ";".join(t[0] for t in top)
+
+    # ── 1단계: tags 포함된 엔드포인트로 기준 데이터 수집 ──────────────────────
     rich: dict = {}
     for req in ("top100forever", "top100in2weeks", "top100owned"):
         rich.update(fetch({"request": req}))
 
+    # ── 2단계: all 엔드포인트로 게임 수 확장 (page 0~4) ──────────────────────
     bulk: dict = {}
-    for page in range(20):
+    for page in range(5):
         data = fetch({"request": "all", "page": page})
         if not data:
             break
         bulk.update(data)
 
+    # rich 데이터로 bulk 덮어쓰기 (tags 보존)
     bulk.update(rich)
     records = list(bulk.values())
 
@@ -135,99 +289,70 @@ def load_data() -> pd.DataFrame:
 
     df = pd.DataFrame(records)
 
+    # price: 센트 → 달러
     if "price" in df.columns:
         df["price"] = pd.to_numeric(df["price"], errors="coerce").fillna(0) / 100
     else:
         df["price"] = 0.0
 
-    genre_from_tags = (
-        df["tags"].apply(tags_to_genres)
-        if "tags" in df.columns
-        else pd.Series("", index=df.index)
-    )
-    genre_from_bulk = df["genres"].fillna("") if "genres" in df.columns else pd.Series("", index=df.index)
-    df["genres"] = genre_from_tags.where(genre_from_tags != "", genre_from_bulk)
+    # tags → genres
+    if "tags" in df.columns:
+        df["genres"] = df["tags"].apply(tags_to_genres)
+    elif "genres" not in df.columns or df.get("genres", pd.Series(dtype=str)).eq("").all():
+        df["genres"] = ""
 
     return df
 
 
-@st.cache_data(show_spinner=False, ttl=3600)
-def search_steam_games(query: str) -> list[dict]:
-    """Steam Store Search API로 게임 이름 검색."""
-    import requests
-    if not query.strip():
-        return []
-    try:
-        r = requests.get(
-            "https://store.steampowered.com/api/storesearch/",
-            params={"term": query, "l": "korean", "cc": "KR"},
-            timeout=10,
-        )
-        r.raise_for_status()
-        return r.json().get("items", [])[:10]
-    except Exception:
-        return []
-
-
-@st.cache_data(show_spinner=False, ttl=3600)
-def fetch_game_by_appid(appid: int) -> dict | None:
-    """SteamSpy appdetails로 특정 게임 전체 데이터 (tags 포함)."""
-    import requests
-    try:
-        r = requests.get(
-            "https://steamspy.com/api.php",
-            params={"request": "appdetails", "appid": str(appid)},
-            timeout=15,
-        )
-        r.raise_for_status()
-        data = r.json()
-        if "price" in data:
-            data["price"] = int(data.get("price", 0) or 0) / 100
-        genre = tags_to_genres(data.get("tags", {}))
-        if not genre and data.get("genre"):
-            genre = data["genre"]
-        data["genres"] = genre
-        return data
-    except Exception:
-        return None
 
 
 def preprocess(df: pd.DataFrame) -> pd.DataFrame | None:
     """전처리: 타입 변환, owners 평균화, 리뷰 비율 계산, 장르 리스트화."""
     df = df.copy()
 
-    if "genres" not in df.columns:
-        df["genres"] = ""
-    df["genres"] = df["genres"].fillna("")
+    # SteamSpy는 'genre'(단수) 로 반환 → 통일
+    if "genre" in df.columns and "genres" not in df.columns:
+        df = df.rename(columns={"genre": "genres"})
 
     required = {"name", "price", "genres", "positive", "negative", "owners"}
     missing  = required - set(df.columns)
     if missing:
         st.error(f"⚠️ 필수 컬럼 누락: {missing}")
         return None
-
+    df["genres"] = df["genres"].fillna("")   # SteamSpy: 장르 없는 게임 처리
     df = df.dropna(subset=["name"]).copy()
     df["price"]    = pd.to_numeric(df["price"],    errors="coerce").fillna(0)
     df["positive"] = pd.to_numeric(df["positive"], errors="coerce").fillna(0).astype(int)
     df["negative"] = pd.to_numeric(df["negative"], errors="coerce").fillna(0).astype(int)
-    df["owners_num"]     = df["owners"].apply(parse_owners)
+
+    df["owners_num"] = df["owners"].apply(parse_owners)
+
     df["total_reviews"]  = df["positive"] + df["negative"]
     df["positive_ratio"] = np.where(
         df["total_reviews"] > 0,
         (df["positive"] / df["total_reviews"] * 100).round(1),
         0.0,
     )
+
     df["genres_list"] = df["genres"].str.split(r"[;,]").apply(
         lambda x: [g.strip() for g in x if g.strip()] if isinstance(x, list) else []
     )
+
     return df
+
+
+def get_all_genres(df: pd.DataFrame) -> list[str]:
+    genres: set[str] = set()
+    for gl in df["genres_list"]:
+        genres.update(gl)
+    return sorted(genres - {""})
 
 
 def base_layout() -> dict:
     return dict(
         paper_bgcolor=PLOT_BG,
         plot_bgcolor=CHART_BG,
-        font=dict(color=FONT_COLOR, family="Segoe UI, sans-serif"),
+        font=dict(color=FONT_COLOR, family="Segoe UI, Malgun Gothic, sans-serif", size=13),
     )
 
 
@@ -252,10 +377,23 @@ with st.sidebar:
     st.caption("Steam 게임 데이터 인터랙티브 분석")
     st.markdown("---")
 
+    # 데이터 출처 표시
     total_games = len(df_raw)
     st.success(f"✅ {total_games:,}개 게임 로드 완료")
     st.markdown("---")
 
+    # ── 장르 필터 ──────────────────────────────────────────────────────────
+    all_genres      = get_all_genres(df_raw)
+    selected_genres = st.multiselect(
+        "🎯 장르 필터",
+        options=all_genres,
+        default=[],
+        placeholder="전체 장르",
+    )
+
+    st.markdown("---")
+
+    # ── 최소 리뷰 수 슬라이더 ─────────────────────────────────────────────
     max_slider = int(df_raw["total_reviews"].quantile(0.95))
     min_reviews = st.slider(
         "📝 최소 리뷰 수",
@@ -264,54 +402,9 @@ with st.sidebar:
         value=50,
         step=10,
     )
+
     st.markdown("---")
     st.markdown("### 🔍 게임 상세 정보")
-
-    search_query = st.text_input(
-        "🔎 게임 이름 검색",
-        placeholder="ex) Undertale",
-        key="game_search_input",
-    )
-
-    searched_game_data = None
-
-    if len(search_query) >= 2:
-        with st.spinner("검색 중..."):
-            search_results = search_steam_games(search_query)
-
-        if search_results:
-            result_names = [r["name"] for r in search_results]
-            chosen_name  = st.selectbox(
-                "검색 결과 (선택하면 바로 적용)",
-                options=result_names,
-                key="search_result_select",
-            )
-            chosen_idx   = result_names.index(chosen_name)
-            chosen_appid = search_results[chosen_idx]["id"]
-            if (st.session_state.get("detail_appid") != chosen_appid):
-                st.session_state["detail_appid"] = chosen_appid
-                st.session_state["detail_name"]  = chosen_name
-        else:
-            st.caption("검색 결과가 없어요 😥")
-
-    elif search_query:
-        st.caption("두 글자 이상 입력해주세요")
-
-    if "detail_appid" in st.session_state and not search_query:
-        if st.button("❌ 검색 초기화", use_container_width=True):
-            del st.session_state["detail_appid"]
-            del st.session_state["detail_name"]
-            st.rerun()
-
-    if "detail_appid" in st.session_state:
-        with st.spinner(f"'{st.session_state['detail_name']}' 불러오는 중..."):
-            raw = fetch_game_by_appid(st.session_state["detail_appid"])
-        if raw:
-            searched_game_data = preprocess(pd.DataFrame([raw]))
-            if searched_game_data is not None and not searched_game_data.empty:
-                searched_game_data = searched_game_data.iloc[0]
-            else:
-                searched_game_data = None
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -319,84 +412,156 @@ with st.sidebar:
 # ══════════════════════════════════════════════════════════════════════════════
 df = df_raw[df_raw["total_reviews"] >= min_reviews].copy()
 
+if selected_genres:
+    mask = df["genres_list"].apply(
+        lambda gl: any(g in gl for g in selected_genres)
+    )
+    df = df[mask]
+
 if df.empty:
     st.warning("⚠️ 조건에 맞는 게임이 없습니다. 필터를 조정해주세요.")
     st.stop()
 
+# 필터링 완료 후 사이드바 게임 드롭다운
+with st.sidebar:
+    selected_game = st.selectbox(
+        "게임 선택",
+        options=df["name"].tolist(),
+        index=0,
+    )
+
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 메인 화면
+# 메인 화면 시작
 # ══════════════════════════════════════════════════════════════════════════════
 st.markdown("# 🎮 Steam Game Analytics Dashboard")
 st.markdown("---")
 
-# ── 섹션 1: 주요 지표
+
+# ── 섹션 1: 주요 지표 ─────────────────────────────────────────────────────────
 st.markdown("### 📊 주요 지표")
+
 m1, m2, m3, m4 = st.columns(4)
+
 with m1:
     st.metric("🎮 총 게임 수", f"{len(df):,}")
+
 with m2:
     avg_price = df[df["price"] > 0]["price"].mean()
     st.metric("💰 평균 가격", f"${avg_price:.2f}" if not np.isnan(avg_price) else "N/A")
+
 with m3:
     avg_ratio = df["positive_ratio"].mean()
     st.metric("👍 평균 긍정 비율", f"{avg_ratio:.1f}%")
+
 with m4:
     free_pct = (df["price"] == 0).sum() / len(df) * 100
     st.metric("🆓 무료 게임 비율", f"{free_pct:.1f}%")
+
 st.markdown("---")
 
-# ── 섹션 2: TOP 10 & 가격 분포
+
+# ── 섹션 2: TOP 10 & 가격 분포 ───────────────────────────────────────────────
 st.markdown("### 🔥 인기 게임 TOP 10 & 💸 가격 분포")
 col1, col2 = st.columns([3, 2], gap="large")
 
 with col1:
-    top10 = df.nlargest(10, "positive")[["name", "positive", "positive_ratio", "price"]].copy()
+    top10 = (
+        df.nlargest(10, "positive")[["name", "positive", "positive_ratio", "price"]]
+        .copy()
+    )
     top10["label"] = top10["name"].str[:35]
-    fig_top10 = go.Figure(go.Bar(
-        x=top10["positive"], y=top10["label"], orientation="h",
-        marker=dict(color=top10["positive"], colorscale=[[0, ACCENT_DARK], [1, ACCENT_LIGHT]], showscale=False),
-        text=top10["positive"].apply(lambda v: f"{v:,}"),
-        textposition="outside", textfont=dict(color=FONT_COLOR, size=11),
-        hovertemplate="<b>%{y}</b><br>긍정 리뷰: %{x:,}<extra></extra>",
-    ))
+
+    fig_top10 = go.Figure(
+        go.Bar(
+            x=top10["positive"],
+            y=top10["label"],
+            orientation="h",
+            marker=dict(
+                color=top10["positive"],
+                colorscale=[[0, ACCENT_DARK], [1, ACCENT_LIGHT]],
+                showscale=False,
+            ),
+            text=top10["positive"].apply(lambda v: f"{v:,}"),
+            textposition="outside",
+            textfont=dict(color=FONT_COLOR, size=11),
+            hovertemplate=(
+                "<b>%{y}</b><br>"
+                "긍정 리뷰: %{x:,}<br>"
+                "<extra></extra>"
+            ),
+        )
+    )
     fig_top10.update_layout(
         **base_layout(),
-        xaxis=dict(gridcolor=GRID_COLOR, title="긍정 리뷰 수", title_font_color=FONT_COLOR),
-        yaxis=dict(gridcolor=GRID_COLOR, autorange="reversed"),
-        height=420, margin=dict(l=10, r=80, t=30, b=20),
+        xaxis=dict(
+            gridcolor=GRID_COLOR,
+            title="긍정 리뷰 수",
+            title_font_color=FONT_COLOR,
+        ),
+        yaxis=dict(
+            gridcolor=GRID_COLOR,
+            autorange="reversed",
+        ),
+        height=420,
+        margin=dict(l=10, r=80, t=30, b=20),
     )
     st.plotly_chart(fig_top10, use_container_width=True)
 
 with col2:
     priced = df[(df["price"] > 0) & (df["price"] <= 60)]
-    fig_hist = px.histogram(priced, x="price", nbins=25,
-                            color_discrete_sequence=[ACCENT_LIGHT],
-                            labels={"price": "가격 ($)", "count": "게임 수"})
+
+    fig_hist = px.histogram(
+        priced,
+        x="price",
+        nbins=25,
+        color_discrete_sequence=[ACCENT_LIGHT],
+        labels={"price": "가격 ($)", "count": "게임 수"},
+    )
     fig_hist.update_layout(
         **base_layout(),
         xaxis=dict(gridcolor=GRID_COLOR, title="가격 ($)"),
         yaxis=dict(gridcolor=GRID_COLOR, title="게임 수"),
-        height=420, bargap=0.04, showlegend=False,
+        height=420,
+        bargap=0.04,
+        showlegend=False,
         margin=dict(l=10, r=10, t=30, b=20),
     )
     st.plotly_chart(fig_hist, use_container_width=True)
 
 st.markdown("---")
 
-# ── 섹션 3: Scatter Plot
+
+# ── 섹션 3: 가격 vs 긍정 리뷰 Scatter Plot ────────────────────────────────────
 st.markdown("### 📈 가격 vs 긍정 리뷰 수")
 st.caption("버블 크기 = 긍정 비율 | 색상 = 긍정 비율 (높을수록 밝음)")
+
 scatter_df = df[(df["price"] > 0) & (df["price"] < 80)].copy()
 scatter_df["bubble"] = np.clip(scatter_df["positive_ratio"] / 10, 2, 18)
+
 fig_scatter = px.scatter(
-    scatter_df, x="price", y="positive", color="positive_ratio", size="bubble",
+    scatter_df,
+    x="price",
+    y="positive",
+    color="positive_ratio",
+    size="bubble",
     hover_name="name",
     color_continuous_scale=[ACCENT_DARK, ACCENT_LIGHT, "#ffffff"],
-    labels={"price": "가격 ($)", "positive": "긍정 리뷰 수", "positive_ratio": "긍정 비율 (%)"},
-    hover_data={"price": ":.2f", "positive": ":,", "positive_ratio": ":.1f", "bubble": False},
+    labels={
+        "price":          "가격 ($)",
+        "positive":       "긍정 리뷰 수",
+        "positive_ratio": "긍정 비율 (%)",
+    },
+    hover_data={
+        "price":          ":.2f",
+        "positive":       ":,",
+        "positive_ratio": ":.1f",
+        "bubble":         False,
+    },
 )
-fig_scatter.update_traces(marker=dict(line=dict(width=0.5, color="#c7d5e0"), opacity=0.85))
+fig_scatter.update_traces(
+    marker=dict(line=dict(width=0.5, color="#c7d5e0"), opacity=0.85)
+)
 fig_scatter.update_layout(
     **base_layout(),
     xaxis=dict(gridcolor=GRID_COLOR),
@@ -405,53 +570,77 @@ fig_scatter.update_layout(
         title=dict(text="긍정 비율(%)", font=dict(color=FONT_COLOR)),
         tickfont=dict(color=FONT_COLOR),
     ),
-    height=470, margin=dict(l=10, r=10, t=30, b=20),
+    height=470,
+    margin=dict(l=10, r=10, t=30, b=20),
 )
 st.plotly_chart(fig_scatter, use_container_width=True)
 st.markdown("---")
 
-# ── 섹션 4: 긍정 비율 분포 & 평균 플레이타임 TOP 10
+
+# ── 섹션 4: 긍정 비율 분포 & 장르별 평균 ─────────────────────────────────────
 st.markdown("### 👍 긍정 리뷰 비율 분석")
 col3, col4 = st.columns(2, gap="large")
 
 with col3:
     st.markdown("#### 비율 분포")
-    fig_ratio = px.histogram(df, x="positive_ratio", nbins=20,
-                             color_discrete_sequence=["#4a90a4"],
-                             labels={"positive_ratio": "긍정 리뷰 비율 (%)"})
+    fig_ratio = px.histogram(
+        df,
+        x="positive_ratio",
+        nbins=20,
+        color_discrete_sequence=["#4a90a4"],
+        labels={"positive_ratio": "긍정 리뷰 비율 (%)"},
+    )
     avg_r = df["positive_ratio"].mean()
-    fig_ratio.add_vline(x=avg_r, line_dash="dash", line_color=ACCENT_LIGHT,
-                        annotation_text=f"평균 {avg_r:.1f}%",
-                        annotation_font_color=ACCENT_LIGHT, annotation_font_size=12,
-                        annotation_position="top right")
+    fig_ratio.add_vline(
+        x=avg_r,
+        line_dash="dash",
+        line_color=ACCENT_LIGHT,
+        annotation_text=f"평균 {avg_r:.1f}%",
+        annotation_font_color=ACCENT_LIGHT,
+        annotation_font_size=12,
+        annotation_position="top right",
+    )
     fig_ratio.update_layout(
         **base_layout(),
         xaxis=dict(gridcolor=GRID_COLOR, title="긍정 비율 (%)"),
         yaxis=dict(gridcolor=GRID_COLOR, title="게임 수"),
-        height=360, bargap=0.04, showlegend=False,
+        height=360,
+        bargap=0.04,
+        showlegend=False,
         margin=dict(l=10, r=10, t=30, b=20),
     )
     st.plotly_chart(fig_ratio, use_container_width=True)
 
 with col4:
     st.markdown("#### ⏱️ 평균 플레이타임 TOP 10")
+
     if "average_forever" in df.columns:
         playtime_df = df[df["average_forever"] > 0].copy()
         playtime_df["playtime_h"] = (playtime_df["average_forever"] / 60).round(1)
         top_play = playtime_df.nlargest(10, "playtime_h")[["name", "playtime_h"]].copy()
         top_play["label"] = top_play["name"].str[:30]
-        fig_play = go.Figure(go.Bar(
-            x=top_play["playtime_h"], y=top_play["label"], orientation="h",
-            marker=dict(color=top_play["playtime_h"],
-                        colorscale=[[0, ACCENT_DARK], [1, ACCENT_LIGHT]], showscale=False),
-            text=top_play["playtime_h"].apply(lambda v: f"{v:,.0f}h"),
-            textposition="outside", textfont=dict(color=FONT_COLOR, size=11),
-        ))
+
+        fig_play = go.Figure(
+            go.Bar(
+                x=top_play["playtime_h"],
+                y=top_play["label"],
+                orientation="h",
+                marker=dict(
+                    color=top_play["playtime_h"],
+                    colorscale=[[0, ACCENT_DARK], [1, ACCENT_LIGHT]],
+                    showscale=False,
+                ),
+                text=top_play["playtime_h"].apply(lambda v: f"{v:,.0f}h"),
+                textposition="outside",
+                textfont=dict(color=FONT_COLOR, size=11),
+            )
+        )
         fig_play.update_layout(
             **base_layout(),
             xaxis=dict(gridcolor=GRID_COLOR, title="평균 플레이타임 (시간)"),
             yaxis=dict(gridcolor=GRID_COLOR, autorange="reversed"),
-            height=360, margin=dict(l=10, r=70, t=30, b=20),
+            height=360,
+            margin=dict(l=10, r=70, t=30, b=20),
         )
         st.plotly_chart(fig_play, use_container_width=True)
     else:
@@ -459,55 +648,72 @@ with col4:
 
 st.markdown("---")
 
-# ── 섹션 5: 게임 상세 정보
-st.markdown("### 🕹️ 게임 상세 정보")
 
-if searched_game_data is None:
-    st.info("👈 사이드바에서 게임을 검색해보세요!")
-    st.stop()
+# ── 섹션 5: 선택한 게임 상세 정보 ────────────────────────────────────────────
+st.markdown(f"### 🕹️ 게임 상세 정보")
+st.markdown(f"**{selected_game}**")
 
-game = searched_game_data
-st.markdown(
-    f"**{game['name']}** <span style='color:#4a90a4; font-size:0.8em;'>(🔎 검색 결과)</span>",
-    unsafe_allow_html=True,
-)
+game = df[df["name"] == selected_game].iloc[0]
 
 d1, d2, d3, d4 = st.columns(4)
+
 with d1:
     price_label = "무료 🆓" if game["price"] == 0 else f"${game['price']:.2f}"
     st.metric("💰 가격", price_label)
+
 with d2:
     st.metric("👍 긍정 리뷰", f"{int(game['positive']):,}")
+
 with d3:
     st.metric("👎 부정 리뷰", f"{int(game['negative']):,}")
+
 with d4:
     st.metric("⭐ 긍정 비율", f"{game['positive_ratio']:.1f}%")
 
 st.markdown(" ")
+
 g1, g2 = st.columns([1, 2], gap="large")
 
 with g1:
     ratio_val = game["positive_ratio"]
-    gauge_color = "#c0392b" if ratio_val < 40 else "#d4a017" if ratio_val < 70 else ACCENT_LIGHT
-    fig_gauge = go.Figure(go.Indicator(
-        mode="gauge+number", value=ratio_val,
-        number={"suffix": "%", "font": {"color": FONT_COLOR, "size": 28}},
-        gauge={
-            "axis": {"range": [0, 100], "tickcolor": FONT_COLOR, "tickfont": {"color": FONT_COLOR}},
-            "bar": {"color": gauge_color},
-            "bgcolor": CHART_BG, "bordercolor": GRID_COLOR,
-            "steps": [
-                {"range": [0,  40], "color": "#3d1a1a"},
-                {"range": [40, 70], "color": "#3d3010"},
-                {"range": [70, 100], "color": "#1a3040"},
-            ],
-            "threshold": {"line": {"color": ACCENT_LIGHT, "width": 3}, "thickness": 0.75, "value": ratio_val},
-        },
-        title={"text": "긍정 리뷰 비율", "font": {"color": FONT_COLOR, "size": 14}},
-    ))
+    gauge_color = (
+        "#c0392b" if ratio_val < 40
+        else "#d4a017" if ratio_val < 70
+        else ACCENT_LIGHT
+    )
+    fig_gauge = go.Figure(
+        go.Indicator(
+            mode="gauge+number",
+            value=ratio_val,
+            number={"suffix": "%", "font": {"color": FONT_COLOR, "size": 28}},
+            gauge={
+                "axis": {
+                    "range": [0, 100],
+                    "tickcolor": FONT_COLOR,
+                    "tickfont": {"color": FONT_COLOR},
+                },
+                "bar":         {"color": gauge_color},
+                "bgcolor":     CHART_BG,
+                "bordercolor": GRID_COLOR,
+                "steps": [
+                    {"range": [0,  40], "color": "#3d1a1a"},
+                    {"range": [40, 70], "color": "#3d3010"},
+                    {"range": [70, 100], "color": "#1a3040"},
+                ],
+                "threshold": {
+                    "line":      {"color": ACCENT_LIGHT, "width": 3},
+                    "thickness": 0.75,
+                    "value":     ratio_val,
+                },
+            },
+            title={"text": "긍정 리뷰 비율", "font": {"color": FONT_COLOR, "size": 14}},
+        )
+    )
     fig_gauge.update_layout(
-        paper_bgcolor=PLOT_BG, font=dict(color=FONT_COLOR),
-        height=280, margin=dict(l=20, r=20, t=60, b=20),
+        paper_bgcolor=PLOT_BG,
+        font=dict(color=FONT_COLOR),
+        height=280,
+        margin=dict(l=20, r=20, t=60, b=20),
     )
     st.plotly_chart(fig_gauge, use_container_width=True)
 
@@ -517,12 +723,7 @@ with g2:
 
     with info_col1:
         st.markdown("**🎯 장르**")
-        if game["genres_list"]:
-            genres_str = ", ".join(game["genres_list"])
-        elif game.get("genres"):
-            genres_str = str(game["genres"]).replace(";", ", ")
-        else:
-            genres_str = "정보 없음"
+        genres_str = ", ".join(game["genres_list"]) if game["genres_list"] else "정보 없음"
         st.markdown(genres_str)
 
         st.markdown(" ")
@@ -538,7 +739,10 @@ with g2:
         st.markdown("**🏷️ 원본 owners 값**")
         st.markdown(str(game["owners"]))
 
-# ── 푸터
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 푸터
+# ══════════════════════════════════════════════════════════════════════════════
 st.markdown("---")
 st.markdown(
     "<div style='text-align:center; color:#4a90a4; font-size:0.8em; padding-bottom:10px;'>"
