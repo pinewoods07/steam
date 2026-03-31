@@ -47,30 +47,6 @@ st.markdown("""
     hr { border-color: #4a90a4 !important; }
     .stAlert { background-color: #2a475e !important; }
     footer { visibility: hidden; }
-
-    /* 최소 리뷰 수 원형 프리셋 버튼 */
-    div[data-testid="stSidebar"] .dot-btn button {
-        border-radius: 50% !important;
-        width: 46px !important;
-        height: 46px !important;
-        min-height: 46px !important;
-        padding: 0 !important;
-        font-size: 0 !important;
-        background: radial-gradient(circle, #1e3a1e 60%, #0d1f0d 100%) !important;
-        border: 2px solid #aaff44 !important;
-        box-shadow: 0 0 10px #aaff4466, inset 0 0 6px #aaff4422 !important;
-        cursor: pointer !important;
-        transition: all 0.2s !important;
-        display: block !important;
-        margin: 0 auto !important;
-    }
-    div[data-testid="stSidebar"] .dot-btn button:hover,
-    div[data-testid="stSidebar"] .dot-btn button:focus {
-        background: radial-gradient(circle, #aaff44 30%, #66cc00 100%) !important;
-        box-shadow: 0 0 18px #aaff44cc, 0 0 6px #aaff44 !important;
-        transform: scale(1.12) !important;
-        border-color: #ccff77 !important;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -304,46 +280,29 @@ with st.sidebar:
     st.success(f"✅ {total_games:,}개 게임 로드 완료")
     st.markdown("---")
 
-
-
-    st.markdown("**📝 최소 리뷰 수**")
-    presets = [("전체", 0), ("50", 50), ("500", 500), ("5000", 5000)]
-    preset_cols = st.columns(4)
-    for i, (label, val) in enumerate(presets):
-        with preset_cols[i]:
-            # 라벨 (숫자/텍스트) 위에
-            st.markdown(
-                f"<div style='text-align:center;color:#aaff44;font-size:0.75em;"
-                f"font-weight:600;margin-bottom:4px;letter-spacing:0.02em'>{label}</div>",
-                unsafe_allow_html=True,
-            )
-            # 원형 버튼 (점처럼)
-            st.markdown('<div class="dot-btn">', unsafe_allow_html=True)
-            if st.button("●", key=f"preset_{val}", use_container_width=False):
-                st.session_state["min_reviews"] = val
-            st.markdown('</div>', unsafe_allow_html=True)
-
-    custom_val = st.number_input(
-        "직접 입력",
-        min_value=0,
-        value=st.session_state.get("min_reviews", 50),
-        step=1,
-        label_visibility="collapsed",
-        placeholder="숫자 직접 입력...",
-        key="min_reviews_input",
+    all_genres      = get_all_genres(df_raw)
+    selected_genres = st.multiselect(
+        "🎯 장르 필터",
+        options=all_genres,
+        default=[],
+        placeholder="전체 장르",
     )
-    # number_input 변경 시 session_state 동기화
-    if custom_val != st.session_state.get("min_reviews", 50):
-        st.session_state["min_reviews"] = custom_val
+    st.markdown("---")
 
-    min_reviews = st.session_state.get("min_reviews", 50)
+    max_slider = int(df_raw["total_reviews"].quantile(0.95))
+    min_reviews = st.slider(
+        "📝 최소 리뷰 수",
+        min_value=0,
+        max_value=max(max_slider, 1),
+        value=50,
+        step=10,
+    )
     st.markdown("---")
     st.markdown("### 🔍 게임 상세 정보")
-    st.caption("목록에서 선택하거나, 이름으로 직접 검색하세요.")
 
     search_query = st.text_input(
         "🔎 게임 이름 검색",
-        placeholder="두 글자 이상 입력하면 자동으로 검색돼요",
+        placeholder="ex) Undertale",
         key="game_search_input",
     )
 
@@ -396,6 +355,11 @@ with st.sidebar:
 # ══════════════════════════════════════════════════════════════════════════════
 df = df_raw[df_raw["total_reviews"] >= min_reviews].copy()
 
+if selected_genres:
+    mask = df["genres_list"].apply(
+        lambda gl: any(g in gl for g in selected_genres)
+    )
+    df = df[mask]
 
 if df.empty:
     st.warning("⚠️ 조건에 맞는 게임이 없습니다. 필터를 조정해주세요.")
