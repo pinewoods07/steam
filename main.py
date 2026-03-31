@@ -282,14 +282,27 @@ with st.sidebar:
 
 
 
-    max_slider = int(df_raw["total_reviews"].quantile(0.95))
-    min_reviews = st.slider(
-        "📝 최소 리뷰 수",
+    st.markdown("**📝 최소 리뷰 수**")
+    preset_cols = st.columns(4)
+    presets = [("전체", 0), ("50", 50), ("500", 500), ("5000", 5000)]
+    for i, (label, val) in enumerate(presets):
+        if preset_cols[i].button(label, use_container_width=True, key=f"preset_{val}"):
+            st.session_state["min_reviews"] = val
+
+    custom_val = st.number_input(
+        "직접 입력",
         min_value=0,
-        max_value=max(max_slider, 1),
-        value=50,
-        step=10,
+        value=st.session_state.get("min_reviews", 50),
+        step=1,
+        label_visibility="collapsed",
+        placeholder="숫자 직접 입력...",
+        key="min_reviews_input",
     )
+    # number_input 변경 시 session_state 동기화
+    if custom_val != st.session_state.get("min_reviews", 50):
+        st.session_state["min_reviews"] = custom_val
+
+    min_reviews = st.session_state.get("min_reviews", 50)
     st.markdown("---")
     st.markdown("### 🔍 게임 상세 정보")
     st.caption("목록에서 선택하거나, 이름으로 직접 검색하세요.")
