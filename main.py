@@ -21,121 +21,53 @@ st.set_page_config(
 # ══════════════════════════════════════════════════════════════════════════════
 st.markdown("""
 <style>
-    /* ── 전체 배경 & 기본 텍스트 ── */
-    .stApp { background-color: #1b2838; color: #e8f0f7; }
-    [data-testid="stSidebar"], [data-testid="stSidebar"] * {
-        background-color: #171a21 !important;
-        color: #e8f0f7 !important;
-    }
+    /* 전체 앱 배경 */
+    .stApp { background-color: #1b2838; color: #c7d5e0; }
 
-    /* ── 제목 ── */
-    h1, h2, h3, h4, h1 *, h2 *, h3 *, h4 * { color: #66c0f4 !important; }
+    /* 사이드바 */
+    [data-testid="stSidebar"] { background-color: #171a21 !important; }
+    [data-testid="stSidebar"] * { color: #c7d5e0 !important; }
 
-    /* ── 텍스트 입력 ── */
-    input, textarea,
-    [data-baseweb="input"] input {
-        background-color: #2a475e !important;
-        color: #ffffff !important;
-        border: 1.5px solid #4a90a4 !important;
-        border-radius: 6px !important;
-    }
+    /* 제목 */
+    h1, h2, h3, h4 { color: #66c0f4 !important; }
 
-    /* ── 메트릭 카드 ── */
+    /* 일반 텍스트 */
+    p, label, div, span, .stMarkdown { color: #c7d5e0 !important; }
+
+    /* 메트릭 카드 */
     [data-testid="metric-container"] {
-        background-color: #2a475e !important;
-        border: 1px solid #4a90a4 !important;
-        border-radius: 8px !important;
-        padding: 16px !important;
+        background-color: #2a475e;
+        border: 1px solid #4a90a4;
+        border-radius: 8px;
+        padding: 16px;
     }
-    [data-testid="metric-container"] * { color: #e8f0f7 !important; }
-    [data-testid="stMetricValue"] { color: #66c0f4 !important; font-size: 1.6rem !important; }
-
-    /* ── 셀렉트박스 & 멀티셀렉트: 컨테이너 ── */
-    [data-baseweb="select"],
-    [data-baseweb="select"] > div {
-        background-color: #2a475e !important;
-        border: 1.5px solid #66c0f4 !important;
-        border-radius: 6px !important;
-    }
-    /* 선택된 값 / 입력 텍스트 */
-    [data-baseweb="select"] input,
-    [data-baseweb="select"] [data-testid="stMarkdownContainer"] p,
-    [data-baseweb="select"] span,
-    [data-baseweb="select"] div {
-        background-color: #2a475e !important;
-        color: #ffffff !important;
+    [data-testid="metric-container"] label { color: #8fb8d1 !important; }
+    [data-testid="metric-container"] [data-testid="stMetricValue"] {
+        color: #66c0f4 !important;
+        font-size: 1.6rem !important;
     }
 
-    /* ── 드롭다운 팝오버 & 옵션 ── */
-    /* 팝오버 최상위 컨테이너부터 전부 어둡게 */
-    [data-baseweb="popover"],
-    [data-baseweb="popover"] > div,
-    [data-baseweb="popover"] > div > div,
-    [data-baseweb="popover"] > div > div > div,
-    ul[role="listbox"],
-    ul[role="listbox"] *,
-    [data-baseweb="menu"],
-    [data-baseweb="menu"] > div,
-    [data-baseweb="menu"] > div > div {
-        background-color: #1e3248 !important;
+    /* selectbox / multiselect */
+    .stSelectbox > div > div,
+    .stMultiSelect > div > div {
+        background-color: #2a475e !important;
+        color: #c7d5e0 !important;
         border-color: #4a90a4 !important;
     }
-    li[role="option"] {
-        background-color: #1e3248 !important;
-        color: #e8f0f7 !important;
-        font-size: 0.92rem !important;
-        padding: 8px 12px !important;
-    }
-    li[role="option"] * { 
-        background-color: #1e3248 !important;
-        color: #e8f0f7 !important; 
-    }
-    li[role="option"]:hover,
-    li[role="option"]:hover * {
-        background-color: #2a6496 !important;
-        color: #ffffff !important;
-    }
-    /* "No results" 텍스트 */
-    [data-baseweb="menu"] p,
-    [data-baseweb="menu"] span {
-        background-color: #1e3248 !important;
-        color: #a8c8e0 !important;
-    }
 
-    /* ── 멀티셀렉트 선택된 태그 ── */
-    [data-baseweb="tag"] {
-        background-color: #1a5276 !important;
-        border: 1px solid #66c0f4 !important;
-        border-radius: 4px !important;
-    }
-    [data-baseweb="tag"] *,
-    [data-baseweb="tag"] span { 
-        background-color: #1a5276 !important;
-        color: #ffffff !important;
-        font-weight: 600 !important;
-    }
-
-    /* ── 라벨 ── */
-    label, .stMultiSelect label, .stSelectbox label {
-        color: #66c0f4 !important;
-        font-weight: 600 !important;
-    }
-
-    /* ── 슬라이더 ── */
-    .stSlider * { color: #e8f0f7 !important; }
+    /* 슬라이더 */
+    .stSlider > div { color: #c7d5e0 !important; }
     .stSlider [data-baseweb="slider"] div[role="slider"] {
         background-color: #66c0f4 !important;
     }
 
-    /* ── caption ── */
-    .stCaption *, [data-testid="stCaptionContainer"] * { color: #a8c8e0 !important; }
-
-    /* ── 알림 박스 ── */
-    .stAlert { background-color: #2a475e !important; border-color: #4a90a4 !important; }
-    .stAlert * { color: #ffffff !important; }
-
-    /* ── 구분선 & 푸터 ── */
+    /* 구분선 */
     hr { border-color: #4a90a4 !important; }
+
+    /* 경고/에러 박스 */
+    .stAlert { background-color: #2a475e !important; }
+
+    /* 푸터 */
     footer { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
@@ -248,19 +180,6 @@ def parse_owners(owners_str: str) -> int:
         return 0
 
 
-def tags_to_genres(val) -> str:
-    if isinstance(val, str):
-        try:
-            import json as _json
-            val = _json.loads(val)
-        except Exception:
-            return val
-    if not isinstance(val, dict) or not val:
-        return ""
-    top = sorted(val.items(), key=lambda x: x[1], reverse=True)[:5]
-    return ";".join(t[0] for t in top)
-
-
 @st.cache_data(show_spinner=False, ttl=86400)
 def load_data() -> pd.DataFrame:
     """
@@ -281,14 +200,34 @@ def load_data() -> pd.DataFrame:
         except Exception:
             return {}
 
-    # top100forever / top100in2weeks / top100owned 엔드포인트
-    # → genre 문자열 + tags dict 모두 포함 → 장르 필터 확실히 작동
+    def tags_to_genres(val) -> str:
+        if isinstance(val, str):
+            try:
+                import json as _json
+                val = _json.loads(val)
+            except Exception:
+                return val
+        if not isinstance(val, dict) or not val:
+            return ""
+        top = sorted(val.items(), key=lambda x: x[1], reverse=True)[:5]
+        return ";".join(t[0] for t in top)
+
+    # ── 1단계: tags 포함된 엔드포인트로 기준 데이터 수집 ──────────────────────
     rich: dict = {}
     for req in ("top100forever", "top100in2weeks", "top100owned"):
-        chunk = fetch({"request": req})
-        rich.update(chunk)
+        rich.update(fetch({"request": req}))
 
-    records = list(rich.values())
+    # ── 2단계: all 엔드포인트로 게임 수 확장 (page 0~19, 약 5만 게임) ──────────
+    bulk: dict = {}
+    for page in range(20):
+        data = fetch({"request": "all", "page": page})
+        if not data:
+            break
+        bulk.update(data)
+
+    # rich 데이터로 bulk 덮어쓰기 (tags 보존)
+    bulk.update(rich)
+    records = list(bulk.values())
 
     if not records:
         return pd.read_csv(io.StringIO(SAMPLE_CSV))
@@ -301,12 +240,15 @@ def load_data() -> pd.DataFrame:
     else:
         df["price"] = 0.0
 
-    # ── 장르: tags dict 우선(top100은 항상 채워짐), 없으면 genre 문자열 폴백 ──
-    genre_from_tags  = df["tags"].apply(tags_to_genres)          if "tags"  in df.columns else pd.Series("", index=df.index)
-    genre_from_field = df["genre"].fillna("").astype(str).str.strip() if "genre" in df.columns else pd.Series("", index=df.index)
+    # ── 장르 합성: tags(rich) 우선, 없으면 genre(all) 사용 ──────────────────
+    # all 엔드포인트는 tags 없이 'genre' 문자열 필드를 반환함
+    # rich 엔드포인트는 'tags' dict 반환 → tags_to_genres 로 변환
+    # 두 필드를 합쳐서 최대한 장르 정보 보존
+    genre_from_all  = df["genre"].fillna("")  if "genre"  in df.columns else pd.Series("", index=df.index)
+    genre_from_tags = df["tags"].apply(tags_to_genres) if "tags" in df.columns else pd.Series("", index=df.index)
 
-    # tags 결과 우선 사용, 비어있으면 genre 문자열 사용, 그래도 없으면 빈 값
-    df["genres"] = genre_from_tags.where(genre_from_tags.str.strip() != "", genre_from_field)
+    # tags 변환 결과가 있으면 우선 사용, 없으면 all의 genre 사용
+    df["genres"] = genre_from_tags.where(genre_from_tags != "", genre_from_all)
 
     return df
 
@@ -352,21 +294,10 @@ def fetch_game_by_appid(appid: int) -> dict | None:
         # price: 센트 → 달러 변환
         if "price" in data:
             data["price"] = int(data.get("price", 0) or 0) / 100
-
-        # ── 장르 추출: tags dict 우선, 없으면 genre 문자열 사용 ──────────
-        genres_from_tags = tags_to_genres(data.get("tags", {}))
-        genres_from_field = str(data.get("genre") or data.get("genres") or "").strip()
-
-        if genres_from_tags:
-            data["genres"] = genres_from_tags
-        elif genres_from_field:
-            # "Action, RPG" → "Action;RPG" 으로 통일
-            data["genres"] = genres_from_field.replace(", ", ";").replace(",", ";")
-        else:
-            data["genres"] = ""
-
-        # genre(단수) 컬럼도 genres 와 동일하게 맞춰 preprocess 오작동 방지
-        data["genre"] = data["genres"]
+        # tags → genres 변환
+        data["genres"] = tags_to_genres(data.get("tags", {}))
+        if not data["genres"] and data.get("genre"):
+            data["genres"] = data["genre"]
         return data
     except Exception:
         return None
@@ -376,13 +307,9 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame | None:
     """전처리: 타입 변환, owners 평균화, 리뷰 비율 계산, 장르 리스트화."""
     df = df.copy()
 
-    # genre(단수) / genres(복수) 통일: genres 없거나 비어있으면 genre로 채움
+    # SteamSpy는 'genre'(단수) 로 반환 → 통일
     if "genre" in df.columns and "genres" not in df.columns:
         df = df.rename(columns={"genre": "genres"})
-    elif "genre" in df.columns and "genres" in df.columns:
-        # genres 가 비어있는 행은 genre 값으로 채움
-        mask_empty = df["genres"].isna() | (df["genres"].astype(str).str.strip() == "")
-        df.loc[mask_empty, "genres"] = df.loc[mask_empty, "genre"]
 
     required = {"name", "price", "genres", "positive", "negative", "owners"}
     missing  = required - set(df.columns)
@@ -449,9 +376,7 @@ with st.sidebar:
 
     # 데이터 출처 표시
     total_games = len(df_raw)
-    games_with_genre = df_raw["genres_list"].apply(len).gt(0).sum()
     st.success(f"✅ {total_games:,}개 게임 로드 완료")
-    st.caption(f"🎯 장르 있는 게임: {games_with_genre:,}개")
     st.markdown("---")
 
     # ── 장르 필터 ──────────────────────────────────────────────────────────
@@ -482,7 +407,7 @@ with st.sidebar:
     # ── 게임 이름 직접 검색 ────────────────────────────────────────────────
     search_query = st.text_input(
         "🔎 게임 이름 검색",
-        placeholder="",
+        placeholder="예: 산나비, Undertale...",
         key="game_search_input",
     )
 
@@ -778,19 +703,6 @@ else:
     game        = df[df["name"] == selected_game].iloc[0]
     detail_src  = "📋 목록 선택"
 
-    # 드롭다운 게임 장르 비어있으면 appid로 자동 보완
-    if not game["genres_list"] and "appid" in game.index and game["appid"]:
-        with st.spinner("장르 정보 불러오는 중..."):
-            raw_detail = fetch_game_by_appid(int(game["appid"]))
-        if raw_detail:
-            detail_df = preprocess(pd.DataFrame([raw_detail]))
-            if detail_df is not None and not detail_df.empty:
-                detail_row = detail_df.iloc[0]
-                if detail_row["genres_list"]:
-                    game = game.copy()
-                    game["genres_list"] = detail_row["genres_list"]
-                    game["genres"]      = detail_row["genres"]
-
 st.markdown(f"**{game['name']}** <span style='color:#4a90a4; font-size:0.8em;'>({detail_src})</span>",
             unsafe_allow_html=True)
 
@@ -889,3 +801,8 @@ st.markdown(
     "</div>",
     unsafe_allow_html=True,
 )
+
+
+
+
+
