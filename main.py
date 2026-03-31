@@ -22,7 +22,7 @@ st.set_page_config(
 st.markdown("""
 <style>
     /* ── 전체 배경 & 기본 텍스트 ── */
-    .stApp, .stApp * { background-color: #1b2838; color: #e8f0f7; }
+    .stApp { background-color: #1b2838; color: #e8f0f7; }
     [data-testid="stSidebar"], [data-testid="stSidebar"] * {
         background-color: #171a21 !important;
         color: #e8f0f7 !important;
