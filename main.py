@@ -67,24 +67,39 @@ st.markdown("""
     }
 
     /* ── 드롭다운 팝오버 & 옵션 ── */
+    /* 팝오버 최상위 컨테이너부터 전부 어둡게 */
+    [data-baseweb="popover"],
     [data-baseweb="popover"] > div,
+    [data-baseweb="popover"] > div > div,
+    [data-baseweb="popover"] > div > div > div,
     ul[role="listbox"],
-    [data-baseweb="menu"] {
+    ul[role="listbox"] *,
+    [data-baseweb="menu"],
+    [data-baseweb="menu"] > div,
+    [data-baseweb="menu"] > div > div {
         background-color: #1e3248 !important;
-        border: 1px solid #4a90a4 !important;
-        border-radius: 6px !important;
+        border-color: #4a90a4 !important;
     }
-    [data-baseweb="menu"] *,
-    li[role="option"],
-    li[role="option"] * {
+    li[role="option"] {
         background-color: #1e3248 !important;
         color: #e8f0f7 !important;
         font-size: 0.92rem !important;
+        padding: 8px 12px !important;
+    }
+    li[role="option"] * { 
+        background-color: #1e3248 !important;
+        color: #e8f0f7 !important; 
     }
     li[role="option"]:hover,
     li[role="option"]:hover * {
         background-color: #2a6496 !important;
         color: #ffffff !important;
+    }
+    /* "No results" 텍스트 */
+    [data-baseweb="menu"] p,
+    [data-baseweb="menu"] span {
+        background-color: #1e3248 !important;
+        color: #a8c8e0 !important;
     }
 
     /* ── 멀티셀렉트 선택된 태그 ── */
@@ -286,11 +301,12 @@ def load_data() -> pd.DataFrame:
     else:
         df["price"] = 0.0
 
-    # ── 장르: genre 문자열 우선, 없으면 tags dict 변환 ───────────────────────
-    genre_from_field = df["genre"].fillna("").astype(str) if "genre" in df.columns else pd.Series("", index=df.index)
-    genre_from_tags  = df["tags"].apply(tags_to_genres)   if "tags"  in df.columns else pd.Series("", index=df.index)
+    # ── 장르: tags dict 우선(top100은 항상 채워짐), 없으면 genre 문자열 폴백 ──
+    genre_from_tags  = df["tags"].apply(tags_to_genres)          if "tags"  in df.columns else pd.Series("", index=df.index)
+    genre_from_field = df["genre"].fillna("").astype(str).str.strip() if "genre" in df.columns else pd.Series("", index=df.index)
 
-    df["genres"] = genre_from_field.where(genre_from_field.str.strip() != "", genre_from_tags)
+    # tags 결과 우선 사용, 비어있으면 genre 문자열 사용, 그래도 없으면 빈 값
+    df["genres"] = genre_from_tags.where(genre_from_tags.str.strip() != "", genre_from_field)
 
     return df
 
@@ -433,7 +449,9 @@ with st.sidebar:
 
     # 데이터 출처 표시
     total_games = len(df_raw)
+    games_with_genre = df_raw["genres_list"].apply(len).gt(0).sum()
     st.success(f"✅ {total_games:,}개 게임 로드 완료")
+    st.caption(f"🎯 장르 있는 게임: {games_with_genre:,}개")
     st.markdown("---")
 
     # ── 장르 필터 ──────────────────────────────────────────────────────────
