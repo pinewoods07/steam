@@ -280,14 +280,7 @@ with st.sidebar:
     st.success(f"✅ {total_games:,}개 게임 로드 완료")
     st.markdown("---")
 
-    all_genres      = get_all_genres(df_raw)
-    selected_genres = st.multiselect(
-        "🎯 장르 필터",
-        options=all_genres,
-        default=[],
-        placeholder="전체 장르",
-    )
-    st.markdown("---")
+
 
     max_slider = int(df_raw["total_reviews"].quantile(0.95))
     min_reviews = st.slider(
@@ -299,10 +292,11 @@ with st.sidebar:
     )
     st.markdown("---")
     st.markdown("### 🔍 게임 상세 정보")
+    st.caption("목록에서 선택하거나, 이름으로 직접 검색하세요.")
 
     search_query = st.text_input(
         "🔎 게임 이름 검색",
-        placeholder="ex) Undertale",
+        placeholder="두 글자 이상 입력하면 자동으로 검색돼요",
         key="game_search_input",
     )
 
@@ -355,11 +349,6 @@ with st.sidebar:
 # ══════════════════════════════════════════════════════════════════════════════
 df = df_raw[df_raw["total_reviews"] >= min_reviews].copy()
 
-if selected_genres:
-    mask = df["genres_list"].apply(
-        lambda gl: any(g in gl for g in selected_genres)
-    )
-    df = df[mask]
 
 if df.empty:
     st.warning("⚠️ 조건에 맞는 게임이 없습니다. 필터를 조정해주세요.")
