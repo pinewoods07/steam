@@ -1,548 +1,403 @@
 import streamlit as st
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-import numpy as np
-import io
-import json
+from groq import Groq
 
-# ══════════════════════════════════════════════════════════════════════════════
-# 페이지 기본 설정
-# ══════════════════════════════════════════════════════════════════════════════
+# ── 페이지 설정 ──────────────────────────────────────────────────
 st.set_page_config(
-    page_title="🎮 Steam Dashboard",
-    page_icon="🎮",
+    page_title="EQUINOX · 에키녹스의 검",
+    page_icon="⚔️",
     layout="wide",
-    initial_sidebar_state="expanded",
 )
 
-st.markdown("""
-<style>
-    .stApp { background-color: #1b2838; color: #c7d5e0; }
-    [data-testid="stSidebar"] { background-color: #171a21 !important; }
-    [data-testid="stSidebar"] * { color: #c7d5e0 !important; }
-    h1, h2, h3, h4 { color: #66c0f4 !important; }
-    p, label, div, span, .stMarkdown { color: #c7d5e0 !important; }
-    [data-testid="metric-container"] {
-        background-color: #2a475e;
-        border: 1px solid #4a90a4;
-        border-radius: 8px;
-        padding: 16px;
-    }
-    [data-testid="metric-container"] label { color: #8fb8d1 !important; }
-    [data-testid="metric-container"] [data-testid="stMetricValue"] {
-        color: #66c0f4 !important;
-        font-size: 1.6rem !important;
-    }
-    .stSelectbox > div > div,
-    .stMultiSelect > div > div {
-        background-color: #2a475e !important;
-        color: #c7d5e0 !important;
-        border-color: #4a90a4 !important;
-    }
-    .stSlider > div { color: #c7d5e0 !important; }
-    .stSlider [data-baseweb="slider"] div[role="slider"] {
-        background-color: #66c0f4 !important;
-    }
-    hr { border-color: #4a90a4 !important; }
-    .stAlert { background-color: #2a475e !important; }
-    footer { visibility: hidden; }
-</style>
-""", unsafe_allow_html=True)
+# ── API 키 ────────────────────────────────────────────────────────
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-PLOT_BG      = "#1b2838"
-CHART_BG     = "#2a475e"
-FONT_COLOR   = "#c7d5e0"
-GRID_COLOR   = "#3d6680"
-ACCENT_LIGHT = "#66c0f4"
-ACCENT_DARK  = "#2a6496"
-
-SAMPLE_CSV = """name,price,genres,positive,negative,owners,average_forever
-Counter-Strike 2,0,Action;Free to Play,1250000,320000,50000000 - 100000000,1200
-Dota 2,0,Action;Free to Play;Strategy,980000,450000,50000000 - 100000000,3000
-PUBG: BATTLEGROUNDS,29.99,Action;Massively Multiplayer,850000,280000,10000000 - 20000000,900
-Elden Ring,59.99,Action;RPG,620000,42000,5000000 - 10000000,600
-Cyberpunk 2077,59.99,Action;RPG,740000,190000,10000000 - 20000000,480
-The Witcher 3: Wild Hunt,39.99,Action;RPG,820000,24000,10000000 - 20000000,720
-Grand Theft Auto V,29.99,Action;Adventure,710000,130000,20000000 - 50000000,540
-Stardew Valley,14.99,RPG;Simulation;Indie,650000,14000,5000000 - 10000000,360
-Terraria,9.99,Action;Adventure;Indie,750000,11000,10000000 - 20000000,480
-Portal 2,9.99,Action;Adventure,780000,8500,10000000 - 20000000,300
+# ── 공통 멤버 정보 ─────────────────────────────────────────────────
+MEMBERS_INFO = """
+【에키녹스 멤버 공통 정보】
+- 한별 (⭐): 리더. 23세 여성 164cm. 금발 장발 포니테일. 동제국 황녀 출신(극비). ENTP. 침착하고 완벽주의적. 딸기 좋아함.
+- 유카 니널스 (🐺): 부리더. 23세 여성 162cm. 레몬빛 금발 보브컷, 벽안(세로동공). 서제국 출신, 보육원 출신. ESFP. 자유롭고 낭만적. 경계심 강함. 총+체인 소지.
+- 잡채 (🍤): 전방 근접딜러. 24세 여성 167cm. 갈색 트윈테일+새우 장식. 북제국 탈출. 결속 후 목소리 잃음(리본 가리면 가능). ISTP. 침착하고 낙천적. 새우 좋아함, 딸기 못 먹음.
+- 해월 (🛸): 저격수+힐러. 22세 여성 158cm. 회갈색 반묶음 중단발, 탁한 연두색 눈. 서제국(동서혼혈). 원치 않게 살인 후 자책. INFJ. 다정하고 학구적, 강박적 죄책감. 블루베리 좋아함.
+- 다람 (🐿): 원거리딜러+서류회계. 23~25세 남성 178cm. 주황색 쉼표머리, 하늘색 눈. 남제국 추정. 본명 미상. ISTJ. 침착하고 충직. 샌드위치 좋아함.
+- 이연 (🐱): 탱커. 24세 남성 181cm. 백발+끝 민트색(희귀병). 서제국, 유카와 같은 보육원 출신. ISFP. 능청스럽고 헌신적. 동물 매우 좋아함. 유카를 가족처럼 여김.
+- 닉 (🧇): 전방딜러. 24세 남성 182cm. 주황기 금발 곱슬 쉼표머리, 진회색 눈. 북제국 출신. 12세에 가족 몰살 목격. ENTJ. 냉철하고 지략적. 불 꺼림. 와플 좋아함.
+- 오류 (🦑): 암살·기습. 24세 남성 172.9cm. 칠흑 검은 머리 투블럭. 동제국 출신, 달길에서 성장. INFP. 조용하고 동정심 강함. 결벽증. 우표 수집.
+- 사드 카펜터 (🐍): 무기공+협력자(정식 멤버 아님). 23세 남성 175cm. 짙은 청록 반곱슬 5:5 가르마, 연노랑 눈. 중립지대 출신. ENFP. 활달하고 자신감 넘침.
 """
 
-# ══════════════════════════════════════════════════════════════════════════════
-# 모듈 레벨 헬퍼
-# ══════════════════════════════════════════════════════════════════════════════
+# ── 캐릭터 데이터 ──────────────────────────────────────────────────
+CHARACTERS = {
+    "hanbyeol": {
+        "name": "한 별", "emoji": "⭐", "role": "에키녹스 리더",
+        "color": "#C9A84C", "mbti": "ENTP · 1w2",
+        "tags": ["침착", "책임감", "완벽주의"],
+        "greeting": "왔어? 용건 있으면 말해.",
+        "prompt": f"""당신은 《에키녹스의 검》의 캐릭터 한별입니다. 에키녹스의 리더이며 동제국 황녀 출신(극비)입니다.
+성격: 침착하고 책임감 강하며 이타적이고 완벽주의적입니다. 감정을 억누르는 편입니다.
+말투: 반말. 평소엔 "왔어?", "알아.", "그래?", "했어?" 같이 짧고 가벼운 어미. 진지하거나 단호한 순간에만 "~다.", "~거야.", "~마." 로 끝냄. 예시: "닉은 그런 말 들을 만한 행동을 하긴 하지. 근데 그게 다가 아니라는 건 내가 알아. 그냥 그 녀석 나름의 방식이 있는 거야. 함부로 판단하지 마." 가끔 황제 말투("짐은...")가 실수로 튀어나옴. 딸기 좋아함.
+멤버 호칭: 유카, 잡채, 해월, 다람, 연, 닉, 류(오류), 사드
+{MEMBERS_INFO}
+중요: 항상 캐릭터로만 답변. 2~4문장 이내로 짧게. 세계관 밖 질문엔 모른다고 하거나 화제를 돌릴 것."""
+    },
+    "yuka": {
+        "name": "유카 니널스", "emoji": "🐺", "role": "부보스 · 정보상",
+        "color": "#013af8", "mbti": "ESFP · 7w6",
+        "tags": ["자유로움", "경계심", "외강내유"],
+        "greeting": "어서오세요~ 뭐 마실래요?",
+        "prompt": f"""당신은 《에키녹스의 검》의 캐릭터 유카 니널스입니다. 에키녹스의 부리더이며 바텐더로 위장한 정보상입니다.
+성격: 자유롭고 낭만을 추구하며 경계심이 강합니다. 겉은 강해 보이지만 내면은 여립니다. 회피적인 면도 있습니다.
+말투: 기본 존댓말. 밝고 여유롭게. 가끔 능청스럽게. "~네요", "~죠" 같은 어미.
+멤버 호칭: 별/리더님, 잡채씨, 해월씨, 다람(반말), 연(반말), 닉씨, 류씨(오류), 사드씨
+{MEMBERS_INFO}
+중요: 항상 캐릭터로만 답변. 2~4문장 이내로 짧게."""
+    },
+    "japchae": {
+        "name": "잡채", "emoji": "🍤", "role": "전방 근접딜러",
+        "color": "#C8813A", "mbti": "ISTP · 6w7",
+        "tags": ["침착", "낙천", "신뢰중시"],
+        "greeting": "왜 왔어?",
+        "prompt": f"""당신은 《에키녹스의 검》의 캐릭터 잡채(박잡채)입니다. 에키녹스의 전방 근접딜러입니다.
+성격: 침착하고 낙천적이며 우직하고 신뢰를 중시합니다. 새우를 매우 좋아하고 딸기는 못 먹습니다.
+말투: 반말. 짧고 담백하게. 말수 적음. 새우 얘기엔 살짝 들뜸.
+멤버 호칭: 별/별별별, 유카/미쳤스, 해월/달팽이, 다람, 연, 닉, 류(오류), 사드
+{MEMBERS_INFO}
+중요: 항상 캐릭터로만 답변. 2~4문장 이내로 짧게."""
+    },
+    "haewol": {
+        "name": "해월", "emoji": "🛸", "role": "저격수 · 힐러",
+        "color": "#7EB89A", "mbti": "INFJ · 5w4",
+        "tags": ["다정", "학구적", "강박적 죄책감"],
+        "greeting": "아, 안녕하세요! 무슨 일이신가요?",
+        "prompt": f"""당신은 《에키녹스의 검》의 캐릭터 해월입니다. 에키녹스의 저격수이자 힐러입니다.
+성격: 다정하고 학구적이지만 자기파괴적이고 강박적인 죄책감을 가집니다. 블루베리 좋아함, 초콜릿 싫어함.
+말투: 전원에게 존댓말+씨. 조심스럽고 부드럽게. 자책 표현 간간이. "...죄송해요", "제가 잘못한 건..." 같은 표현.
+멤버 호칭: 별씨, 유카씨, 잡채씨, 다람씨, 연씨, 닉씨, 류씨(오류), 사드씨
+{MEMBERS_INFO}
+중요: 항상 캐릭터로만 답변. 2~4문장 이내로 짧게."""
+    },
+    "daram": {
+        "name": "다람", "emoji": "🐿", "role": "원거리딜러 · 서류회계",
+        "color": "#5BB8E8", "mbti": "ISTJ · 9w1",
+        "tags": ["침착", "충직", "거리두기"],
+        "greeting": "네, 말씀하세요.",
+        "prompt": f"""당신은 《에키녹스의 검》의 캐릭터 다람입니다. 에키녹스의 원거리딜러이자 서류·회계 담당입니다.
+성격: 침착하고 충직하며 생존주의적. 연기를 잘하고 거리를 둠. 샌드위치 좋아함. 본명 모름. '다람'이 진짜 이름이라 여김.
+말투: 공석엔 존댓말, 사석엔 반말. 사용자와는 존댓말. 차분하고 정확하게.
+멤버 호칭: 별님/별씨, 유카님/유카, 잡채씨, 해월씨, 연씨/연, 닉씨, 류씨(오류), 사드씨
+{MEMBERS_INFO}
+중요: 항상 캐릭터로만 답변. 2~4문장 이내로 짧게."""
+    },
+    "iyeon": {
+        "name": "이 연", "emoji": "🐱", "role": "탱커",
+        "color": "#72DDD2", "mbti": "ISFP · 2w3",
+        "tags": ["능청", "헌신적", "감정회피"],
+        "greeting": "오, 왔네요~ 뭐 필요한 거 있어요?",
+        "prompt": f"""당신은 《에키녹스의 검》의 캐릭터 이연입니다. 에키녹스의 탱커입니다.
+성격: 능청스럽고 헌신적이며 감정을 회피함. 불안정한 면도 있음. 동물 매우 좋아함. 유카를 가족처럼 여김.
+말투: 반존대. "~네요"와 "~야" 사이 어딘가. 능청스럽고 유들유들하게. 동물 얘기엔 눈이 빛남.
+멤버 호칭: 별님, 유카(반말), 잡채님, 해월님, 다람(반말), 닉님, 류님(오류), 사드님
+{MEMBERS_INFO}
+중요: 항상 캐릭터로만 답변. 2~4문장 이내로 짧게."""
+    },
+    "nick": {
+        "name": "닉", "emoji": "🧇", "role": "전방딜러",
+        "color": "#8899BB", "mbti": "ENTJ · 8w7",
+        "tags": ["냉철", "지략", "목표집착"],
+        "greeting": "용건.",
+        "prompt": f"""당신은 《에키녹스의 검》의 캐릭터 닉(니콜라스 칼 레스터)입니다. 에키녹스의 전방딜러입니다.
+성격: 냉철하고 지략적이며 통제적. 불신 강함. 목표 집착. 챙기지만 절대 티 안 냄. 불 꺼림. 와플 좋아함, 정어리 싫어함.
+말투: 냉철한 반말 단문. 감정 표현 최소화. "그래서?", "됐어", "알아서 해" 같은 식. 필요한 정보는 정확히 줌.
+멤버 호칭: 별/한별, 유카/유카니널스, 잡채/박잡채, 해월/이해월, 다람, 연/이연, 류/오류, 사드/사드카펜터
+{MEMBERS_INFO}
+중요: 항상 캐릭터로만 답변. 2~4문장 이내로 짧게."""
+    },
+    "oryu": {
+        "name": "오 류", "emoji": "🦑", "role": "후방 근거리딜러 (암살)",
+        "color": "#7766AA", "mbti": "INFP · 4w5",
+        "tags": ["조용", "동정심", "결벽증"],
+        "greeting": "무슨 일로 오셨습니까?",
+        "prompt": f"""당신은 《에키녹스의 검》의 캐릭터 오류입니다. 에키녹스의 암살·기습 담당입니다.
+성격: 조용하고 검소하며 동정심 강함. 자신을 비가시화하려 함. 결벽증. 우표 수집. 자책 많음.
+말투: 격식체 경어. "~하셨습니까?", "예.", "알겠습니다." 같은 군인/종복 스타일. 짧고 단호한 경어. 자책도 격식체로. "제가 부족한 탓입니다."
+멤버 호칭: 별님, 유카씨, 잡채씨, 해월씨, 다람씨, 연씨, 닉씨, 사드씨
+{MEMBERS_INFO}
+중요: 항상 캐릭터로만 답변. 2~4문장 이내로 짧게."""
+    },
+    "saad": {
+        "name": "사드 카펜터", "emoji": "🐍", "role": "무기공 · 에키녹스 협력자",
+        "color": "#3ABFBF", "mbti": "ENFP · 3w4",
+        "tags": ["활달", "자신감", "인정욕구"],
+        "greeting": "왔어? 나한테 뭔가 필요한 거지?",
+        "prompt": f"""당신은 《에키녹스의 검》의 캐릭터 사드 플렉 카펜터입니다. 에키녹스의 핵심 협력자이자 무기공입니다. (정식 멤버 아님)
+성격: 활달하고 자신감 넘치며 외강내유. 인정욕구 강함. 소속 회피.
+말투: 전원에게 활발한 반말. 에너지 넘치고 거침없이. 물결표(~) 자주 씀. 자뻑 끼. "내가 좀 잘하잖아~", "뭐~ 이 정도는 기본이지" 같은 표현.
+멤버 호칭: 별씨→별, 유카씨→유카, 잡채씨→잡채, 해월씨→해월, 다람씨→다람, 연씨→연, 닉(반말), 류(오류, 반말)
+{MEMBERS_INFO}
+중요: 항상 캐릭터로만 답변. 2~4문장 이내로 짧게."""
+    },
+}
 
-def tags_to_genres(val) -> str:
-    """tags dict(또는 JSON 문자열) → 상위 5개 태그를 세미콜론으로 연결."""
-    if isinstance(val, str):
-        try:
-            val = json.loads(val)
-        except Exception:
-            return val
-    if not isinstance(val, dict) or not val:
-        return ""
-    top = sorted(val.items(), key=lambda x: x[1], reverse=True)[:5]
-    return ";".join(t[0] for t in top)
+# ── CSS ───────────────────────────────────────────────────────────
+def inject_css(char_color: str):
+    st.markdown(f"""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;800&display=swap');
+
+    html, body, [class*="css"] {{
+        font-family: 'Noto Sans KR', sans-serif;
+        background-color: #0A0A0F;
+        color: #E8E8F0;
+    }}
+    .stApp {{ background-color: #0A0A0F; }}
+
+    /* 헤더 */
+    .equinox-header {{
+        display: flex; align-items: center; gap: 12px;
+        padding: 16px 0 24px;
+        border-bottom: 1px solid #ffffff0F;
+        margin-bottom: 24px;
+    }}
+    .equinox-title {{ font-size: 22px; font-weight: 800; color: #C9A84C; letter-spacing: 3px; }}
+    .equinox-sub {{ font-size: 11px; color: #444; letter-spacing: 4px; }}
+
+    /* 캐릭터 카드 */
+    .char-card {{
+        background: #13131E;
+        border: 1px solid #ffffff0A;
+        border-radius: 16px;
+        padding: 18px;
+        cursor: pointer;
+        transition: all .25s;
+        margin-bottom: 12px;
+    }}
+    .char-card:hover {{
+        border-color: {char_color}66;
+        background: linear-gradient(135deg, {char_color}15, #13131E);
+        transform: translateY(-2px);
+    }}
+    .char-name {{ font-size: 16px; font-weight: 700; color: #E8E8F0; }}
+    .char-role {{ font-size: 11px; color: {char_color}; letter-spacing: 1px; margin: 4px 0 8px; }}
+    .char-tag {{
+        display: inline-block; font-size: 11px;
+        padding: 2px 8px; border-radius: 6px;
+        background: #1E1E2A; color: #666;
+        border: 1px solid #ffffff08;
+        margin: 2px;
+    }}
+
+    /* 채팅 */
+    .chat-header {{
+        background: linear-gradient(135deg, {char_color}15, transparent);
+        border: 1px solid {char_color}33;
+        border-radius: 16px;
+        padding: 16px 20px;
+        margin-bottom: 20px;
+        display: flex; align-items: center; gap: 12px;
+    }}
+    .msg-user {{
+        background: {char_color}CC;
+        color: #0A0A0F;
+        border-radius: 16px 16px 4px 16px;
+        padding: 10px 14px;
+        max-width: 72%;
+        margin-left: auto;
+        margin-bottom: 10px;
+        font-size: 14px;
+        font-weight: 600;
+    }}
+    .msg-char {{
+        background: #1A1A26;
+        color: #D8D8E8;
+        border: 1px solid #ffffff0A;
+        border-radius: 16px 16px 16px 4px;
+        padding: 10px 14px;
+        max-width: 72%;
+        margin-bottom: 10px;
+        font-size: 14px;
+        line-height: 1.6;
+    }}
+    .msg-wrap-user {{ display: flex; justify-content: flex-end; }}
+    .msg-wrap-char {{ display: flex; justify-content: flex-start; gap: 8px; align-items: flex-end; }}
+    .msg-avatar {{
+        width: 32px; height: 32px; border-radius: 10px;
+        background: {char_color}22;
+        border: 1px solid {char_color}44;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px; flex-shrink: 0;
+    }}
+
+    /* 입력창 */
+    .stTextInput input {{
+        background: #1A1A26 !important;
+        border: 1px solid {char_color}33 !important;
+        border-radius: 12px !important;
+        color: #E8E8F0 !important;
+        padding: 10px 16px !important;
+    }}
+    .stTextInput input:focus {{
+        border-color: {char_color}88 !important;
+        box-shadow: none !important;
+    }}
+    .stButton button {{
+        background: linear-gradient(135deg, {char_color}, {char_color}CC) !important;
+        color: #0A0A0F !important;
+        border: none !important;
+        border-radius: 12px !important;
+        font-weight: 700 !important;
+        padding: 10px 24px !important;
+    }}
+    .stButton button:hover {{
+        opacity: 0.85 !important;
+        transform: translateY(-1px) !important;
+    }}
+
+    /* 사이드바 */
+    [data-testid="stSidebar"] {{
+        background: #0D0D16 !important;
+        border-right: 1px solid #ffffff08 !important;
+    }}
+    [data-testid="stSidebar"] * {{ color: #E8E8F0 !important; }}
+
+    /* 기타 */
+    .stMarkdown hr {{ border-color: #ffffff0F; }}
+    div[data-testid="stVerticalBlock"] > div {{ gap: 0 !important; }}
+    </style>
+    """, unsafe_allow_html=True)
 
 
-def parse_owners(owners_str: str) -> int:
-    """'2,000,000 .. 5,000,000' 또는 '1,000,000 - 2,000,000' → 평균 정수."""
-    try:
-        cleaned = str(owners_str).replace(",", "").replace("..", "-")
-        parts   = cleaned.split("-")
-        nums    = [int(p.strip()) for p in parts if p.strip().isdigit()]
-        return int(np.mean(nums)) if nums else 0
-    except Exception:
-        return 0
+# ── 메인 ──────────────────────────────────────────────────────────
+def main():
+    # 상태 초기화
+    if "selected" not in st.session_state:
+        st.session_state.selected = None
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
 
+    char = st.session_state.selected
+    color = char["color"] if char else "#C9A84C"
+    inject_css(color)
 
-# ══════════════════════════════════════════════════════════════════════════════
-# 데이터 로딩
-# ══════════════════════════════════════════════════════════════════════════════
+    # 헤더
+    st.markdown("""
+    <div class="equinox-header">
+        <span class="equinox-title">EQUINOX</span>
+        <span class="equinox-sub">에키녹스의 검</span>
+    </div>
+    """, unsafe_allow_html=True)
 
-@st.cache_data(show_spinner=False, ttl=86400)
-def load_data() -> pd.DataFrame:
-    import requests
+    # ── 갤러리 뷰 ──────────────────────────────────────────────────
+    if char is None:
+        st.markdown("### 캐릭터를 선택하면 직접 대화할 수 있어요")
+        st.markdown("")
 
-    BASE = "https://steamspy.com/api.php"
+        cols = st.columns(3)
+        for i, (cid, c) in enumerate(CHARACTERS.items()):
+            with cols[i % 3]:
+                tags_html = " ".join([f'<span class="char-tag">{t}</span>' for t in c["tags"]])
+                st.markdown(f"""
+                <div class="char-card">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                        <span style="font-size:24px">{c['emoji']}</span>
+                        <div>
+                            <div class="char-name">{c['name']}</div>
+                            <div style="font-size:11px;color:#555">{c['mbti']}</div>
+                        </div>
+                    </div>
+                    <div class="char-role">{c['role']}</div>
+                    <div>{tags_html}</div>
+                </div>
+                """, unsafe_allow_html=True)
+                if st.button(f"{c['emoji']} 대화하기", key=cid, use_container_width=True):
+                    st.session_state.selected = c
+                    st.session_state.messages = [
+                        {"role": "assistant", "content": c["greeting"]}
+                    ]
+                    st.rerun()
 
-    def fetch(params):
-        try:
-            r = requests.get(BASE, params=params, timeout=20)
-            r.raise_for_status()
-            return r.json()
-        except Exception:
-            return {}
-
-    rich: dict = {}
-    for req in ("top100forever", "top100in2weeks", "top100owned"):
-        rich.update(fetch({"request": req}))
-
-    bulk: dict = {}
-    for page in range(20):
-        data = fetch({"request": "all", "page": page})
-        if not data:
-            break
-        bulk.update(data)
-
-    bulk.update(rich)
-    records = list(bulk.values())
-
-    if not records:
-        return pd.read_csv(io.StringIO(SAMPLE_CSV))
-
-    df = pd.DataFrame(records)
-
-    if "price" in df.columns:
-        df["price"] = pd.to_numeric(df["price"], errors="coerce").fillna(0) / 100
+    # ── 채팅 뷰 ────────────────────────────────────────────────────
     else:
-        df["price"] = 0.0
+        # 사이드바: 캐릭터 정보 + 뒤로가기
+        with st.sidebar:
+            st.markdown(f"## {char['emoji']} {char['name']}")
+            st.markdown(f"**{char['role']}**")
+            st.markdown(f"`{char['mbti']}`")
+            st.markdown("---")
+            for t in char["tags"]:
+                st.markdown(f"- {t}")
+            st.markdown("---")
+            if st.button("← 갤러리로 돌아가기", use_container_width=True):
+                st.session_state.selected = None
+                st.session_state.messages = []
+                st.rerun()
+            if st.button("🔄 대화 초기화", use_container_width=True):
+                st.session_state.messages = [
+                    {"role": "assistant", "content": char["greeting"]}
+                ]
+                st.rerun()
 
-    genre_from_tags = (
-        df["tags"].apply(tags_to_genres)
-        if "tags" in df.columns
-        else pd.Series("", index=df.index)
-    )
-    genre_from_bulk = df["genres"].fillna("") if "genres" in df.columns else pd.Series("", index=df.index)
-    df["genres"] = genre_from_tags.where(genre_from_tags != "", genre_from_bulk)
+        # 채팅 헤더
+        st.markdown(f"""
+        <div class="chat-header">
+            <span style="font-size:28px">{char['emoji']}</span>
+            <div>
+                <div style="font-size:18px;font-weight:700;color:{char['color']}">{char['name']}</div>
+                <div style="font-size:12px;color:#555">{char['role']} · {char['mbti']}</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-    return df
+        # 메시지 렌더링
+        for msg in st.session_state.messages:
+            if msg["role"] == "user":
+                st.markdown(f"""
+                <div class="msg-wrap-user">
+                    <div class="msg-user">{msg['content']}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                <div class="msg-wrap-char">
+                    <div class="msg-avatar">{char['emoji']}</div>
+                    <div class="msg-char">{msg['content']}</div>
+                </div>
+                """, unsafe_allow_html=True)
 
+        st.markdown("")
 
-@st.cache_data(show_spinner=False, ttl=3600)
-def search_steam_games(query: str) -> list[dict]:
-    """Steam Store Search API로 게임 이름 검색."""
-    import requests
-    if not query.strip():
-        return []
-    try:
-        r = requests.get(
-            "https://store.steampowered.com/api/storesearch/",
-            params={"term": query, "l": "korean", "cc": "KR"},
-            timeout=10,
-        )
-        r.raise_for_status()
-        return r.json().get("items", [])[:10]
-    except Exception:
-        return []
-
-
-@st.cache_data(show_spinner=False, ttl=3600)
-def fetch_game_by_appid(appid: int) -> dict | None:
-    """SteamSpy appdetails로 특정 게임 전체 데이터 (tags 포함)."""
-    import requests
-    try:
-        r = requests.get(
-            "https://steamspy.com/api.php",
-            params={"request": "appdetails", "appid": str(appid)},
-            timeout=15,
-        )
-        r.raise_for_status()
-        data = r.json()
-        if "price" in data:
-            data["price"] = int(data.get("price", 0) or 0) / 100
-        genre = tags_to_genres(data.get("tags", {}))
-        if not genre and data.get("genre"):
-            genre = data["genre"]
-        data["genres"] = genre
-        return data
-    except Exception:
-        return None
-
-
-def preprocess(df: pd.DataFrame) -> pd.DataFrame | None:
-    """전처리: 타입 변환, owners 평균화, 리뷰 비율 계산, 장르 리스트화."""
-    df = df.copy()
-
-    if "genres" not in df.columns:
-        df["genres"] = ""
-    df["genres"] = df["genres"].fillna("")
-
-    required = {"name", "price", "genres", "positive", "negative", "owners"}
-    missing  = required - set(df.columns)
-    if missing:
-        st.error(f"⚠️ 필수 컬럼 누락: {missing}")
-        return None
-
-    df = df.dropna(subset=["name"]).copy()
-    df["price"]    = pd.to_numeric(df["price"],    errors="coerce").fillna(0)
-    df["positive"] = pd.to_numeric(df["positive"], errors="coerce").fillna(0).astype(int)
-    df["negative"] = pd.to_numeric(df["negative"], errors="coerce").fillna(0).astype(int)
-    df["owners_num"]     = df["owners"].apply(parse_owners)
-    df["total_reviews"]  = df["positive"] + df["negative"]
-    df["positive_ratio"] = np.where(
-        df["total_reviews"] > 0,
-        (df["positive"] / df["total_reviews"] * 100).round(1),
-        0.0,
-    )
-    df["genres_list"] = df["genres"].str.split(r"[;,]").apply(
-        lambda x: [g.strip() for g in x if g.strip()] if isinstance(x, list) else []
-    )
-    return df
-
-
-def base_layout() -> dict:
-    return dict(
-        paper_bgcolor=PLOT_BG,
-        plot_bgcolor=CHART_BG,
-        font=dict(color=FONT_COLOR, family="Segoe UI, sans-serif"),
-    )
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# 데이터 로딩
-# ══════════════════════════════════════════════════════════════════════════════
-with st.spinner("🎮 Steam 데이터 불러오는 중..."):
-    df_raw_loaded = load_data()
-
-df_raw = preprocess(df_raw_loaded)
-
-if df_raw is None:
-    st.error("데이터 전처리에 실패했습니다.")
-    st.stop()
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# 사이드바
-# ══════════════════════════════════════════════════════════════════════════════
-with st.sidebar:
-    st.markdown("## 🎮 Steam Dashboard")
-    st.caption("Steam 게임 데이터 인터랙티브 분석")
-    st.markdown("---")
-
-    total_games = len(df_raw)
-    st.success(f"✅ {total_games:,}개 게임 로드 완료")
-    st.markdown("---")
-
-    max_slider = int(df_raw["total_reviews"].quantile(0.95))
-    min_reviews = st.slider(
-        "📝 최소 리뷰 수",
-        min_value=0,
-        max_value=max(max_slider, 1),
-        value=50,
-        step=10,
-    )
-    st.markdown("---")
-    st.markdown("### 🔍 게임 상세 정보")
-
-    search_query = st.text_input(
-        "🔎 게임 이름 검색",
-        placeholder="ex) Undertale",
-        key="game_search_input",
-    )
-
-    searched_game_data = None
-
-    if len(search_query) >= 2:
-        with st.spinner("검색 중..."):
-            search_results = search_steam_games(search_query)
-
-        if search_results:
-            result_names = [r["name"] for r in search_results]
-            chosen_name  = st.selectbox(
-                "검색 결과 (선택하면 바로 적용)",
-                options=result_names,
-                key="search_result_select",
+        # 입력
+        col1, col2 = st.columns([5, 1])
+        with col1:
+            user_input = st.text_input(
+                "", placeholder=f"{char['name']}에게 말하기...",
+                label_visibility="collapsed", key="chat_input"
             )
-            chosen_idx   = result_names.index(chosen_name)
-            chosen_appid = search_results[chosen_idx]["id"]
-            if (st.session_state.get("detail_appid") != chosen_appid):
-                st.session_state["detail_appid"] = chosen_appid
-                st.session_state["detail_name"]  = chosen_name
-        else:
-            st.caption("검색 결과가 없어요 😥")
+        with col2:
+            send = st.button("전송", use_container_width=True)
 
-    elif search_query:
-        st.caption("두 글자 이상 입력해주세요")
+        if send and user_input.strip():
+            st.session_state.messages.append({"role": "user", "content": user_input})
 
-    if "detail_appid" in st.session_state and not search_query:
-        if st.button("❌ 검색 초기화", use_container_width=True):
-            del st.session_state["detail_appid"]
-            del st.session_state["detail_name"]
+            # Groq 호출
+            try:
+                history = [
+                    {"role": "system", "content": char["prompt"]},
+                ] + [
+                    {"role": m["role"], "content": m["content"]}
+                    for m in st.session_state.messages[:-1]
+                ] + [{"role": "user", "content": user_input}]
+
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=history,
+                    max_tokens=512,
+                )
+                reply = response.choices[0].message.content
+            except Exception as e:
+                reply = f"...지금은 대화하기 어렵습니다. ({e})"
+
+            st.session_state.messages.append({"role": "assistant", "content": reply})
             st.rerun()
 
-    if "detail_appid" in st.session_state:
-        with st.spinner(f"'{st.session_state['detail_name']}' 불러오는 중..."):
-            raw = fetch_game_by_appid(st.session_state["detail_appid"])
-        if raw:
-            searched_game_data = preprocess(pd.DataFrame([raw]))
-            if searched_game_data is not None and not searched_game_data.empty:
-                searched_game_data = searched_game_data.iloc[0]
-            else:
-                searched_game_data = None
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# 데이터 필터링
-# ══════════════════════════════════════════════════════════════════════════════
-df = df_raw[df_raw["total_reviews"] >= min_reviews].copy()
-
-if df.empty:
-    st.warning("⚠️ 조건에 맞는 게임이 없습니다. 필터를 조정해주세요.")
-    st.stop()
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# 메인 화면
-# ══════════════════════════════════════════════════════════════════════════════
-st.markdown("# 🎮 Steam Game Analytics Dashboard")
-st.markdown("---")
-
-# ── 섹션 1: 주요 지표
-st.markdown("### 📊 주요 지표")
-m1, m2, m3, m4 = st.columns(4)
-with m1:
-    st.metric("🎮 총 게임 수", f"{len(df):,}")
-with m2:
-    avg_price = df[df["price"] > 0]["price"].mean()
-    st.metric("💰 평균 가격", f"${avg_price:.2f}" if not np.isnan(avg_price) else "N/A")
-with m3:
-    avg_ratio = df["positive_ratio"].mean()
-    st.metric("👍 평균 긍정 비율", f"{avg_ratio:.1f}%")
-with m4:
-    free_pct = (df["price"] == 0).sum() / len(df) * 100
-    st.metric("🆓 무료 게임 비율", f"{free_pct:.1f}%")
-st.markdown("---")
-
-# ── 섹션 2: TOP 10 & 가격 분포
-st.markdown("### 🔥 인기 게임 TOP 10 & 💸 가격 분포")
-col1, col2 = st.columns([3, 2], gap="large")
-
-with col1:
-    top10 = df.nlargest(10, "positive")[["name", "positive", "positive_ratio", "price"]].copy()
-    top10["label"] = top10["name"].str[:35]
-    fig_top10 = go.Figure(go.Bar(
-        x=top10["positive"], y=top10["label"], orientation="h",
-        marker=dict(color=top10["positive"], colorscale=[[0, ACCENT_DARK], [1, ACCENT_LIGHT]], showscale=False),
-        text=top10["positive"].apply(lambda v: f"{v:,}"),
-        textposition="outside", textfont=dict(color=FONT_COLOR, size=11),
-        hovertemplate="<b>%{y}</b><br>긍정 리뷰: %{x:,}<extra></extra>",
-    ))
-    fig_top10.update_layout(
-        **base_layout(),
-        xaxis=dict(gridcolor=GRID_COLOR, title="긍정 리뷰 수", title_font_color=FONT_COLOR),
-        yaxis=dict(gridcolor=GRID_COLOR, autorange="reversed"),
-        height=420, margin=dict(l=10, r=80, t=30, b=20),
-    )
-    st.plotly_chart(fig_top10, use_container_width=True)
-
-with col2:
-    priced = df[(df["price"] > 0) & (df["price"] <= 60)]
-    fig_hist = px.histogram(priced, x="price", nbins=25,
-                            color_discrete_sequence=[ACCENT_LIGHT],
-                            labels={"price": "가격 ($)", "count": "게임 수"})
-    fig_hist.update_layout(
-        **base_layout(),
-        xaxis=dict(gridcolor=GRID_COLOR, title="가격 ($)"),
-        yaxis=dict(gridcolor=GRID_COLOR, title="게임 수"),
-        height=420, bargap=0.04, showlegend=False,
-        margin=dict(l=10, r=10, t=30, b=20),
-    )
-    st.plotly_chart(fig_hist, use_container_width=True)
-
-st.markdown("---")
-
-# ── 섹션 3: Scatter Plot
-st.markdown("### 📈 가격 vs 긍정 리뷰 수")
-st.caption("버블 크기 = 긍정 비율 | 색상 = 긍정 비율 (높을수록 밝음)")
-scatter_df = df[(df["price"] > 0) & (df["price"] < 80)].copy()
-scatter_df["bubble"] = np.clip(scatter_df["positive_ratio"] / 10, 2, 18)
-fig_scatter = px.scatter(
-    scatter_df, x="price", y="positive", color="positive_ratio", size="bubble",
-    hover_name="name",
-    color_continuous_scale=[ACCENT_DARK, ACCENT_LIGHT, "#ffffff"],
-    labels={"price": "가격 ($)", "positive": "긍정 리뷰 수", "positive_ratio": "긍정 비율 (%)"},
-    hover_data={"price": ":.2f", "positive": ":,", "positive_ratio": ":.1f", "bubble": False},
-)
-fig_scatter.update_traces(marker=dict(line=dict(width=0.5, color="#c7d5e0"), opacity=0.85))
-fig_scatter.update_layout(
-    **base_layout(),
-    xaxis=dict(gridcolor=GRID_COLOR),
-    yaxis=dict(gridcolor=GRID_COLOR),
-    coloraxis_colorbar=dict(
-        title=dict(text="긍정 비율(%)", font=dict(color=FONT_COLOR)),
-        tickfont=dict(color=FONT_COLOR),
-    ),
-    height=470, margin=dict(l=10, r=10, t=30, b=20),
-)
-st.plotly_chart(fig_scatter, use_container_width=True)
-st.markdown("---")
-
-# ── 섹션 4: 긍정 비율 분포 & 평균 플레이타임 TOP 10
-st.markdown("### 👍 긍정 리뷰 비율 분석")
-col3, col4 = st.columns(2, gap="large")
-
-with col3:
-    st.markdown("#### 비율 분포")
-    fig_ratio = px.histogram(df, x="positive_ratio", nbins=20,
-                             color_discrete_sequence=["#4a90a4"],
-                             labels={"positive_ratio": "긍정 리뷰 비율 (%)"})
-    avg_r = df["positive_ratio"].mean()
-    fig_ratio.add_vline(x=avg_r, line_dash="dash", line_color=ACCENT_LIGHT,
-                        annotation_text=f"평균 {avg_r:.1f}%",
-                        annotation_font_color=ACCENT_LIGHT, annotation_font_size=12,
-                        annotation_position="top right")
-    fig_ratio.update_layout(
-        **base_layout(),
-        xaxis=dict(gridcolor=GRID_COLOR, title="긍정 비율 (%)"),
-        yaxis=dict(gridcolor=GRID_COLOR, title="게임 수"),
-        height=360, bargap=0.04, showlegend=False,
-        margin=dict(l=10, r=10, t=30, b=20),
-    )
-    st.plotly_chart(fig_ratio, use_container_width=True)
-
-with col4:
-    st.markdown("#### ⏱️ 평균 플레이타임 TOP 10")
-    if "average_forever" in df.columns:
-        playtime_df = df[df["average_forever"] > 0].copy()
-        playtime_df["playtime_h"] = (playtime_df["average_forever"] / 60).round(1)
-        top_play = playtime_df.nlargest(10, "playtime_h")[["name", "playtime_h"]].copy()
-        top_play["label"] = top_play["name"].str[:30]
-        fig_play = go.Figure(go.Bar(
-            x=top_play["playtime_h"], y=top_play["label"], orientation="h",
-            marker=dict(color=top_play["playtime_h"],
-                        colorscale=[[0, ACCENT_DARK], [1, ACCENT_LIGHT]], showscale=False),
-            text=top_play["playtime_h"].apply(lambda v: f"{v:,.0f}h"),
-            textposition="outside", textfont=dict(color=FONT_COLOR, size=11),
-        ))
-        fig_play.update_layout(
-            **base_layout(),
-            xaxis=dict(gridcolor=GRID_COLOR, title="평균 플레이타임 (시간)"),
-            yaxis=dict(gridcolor=GRID_COLOR, autorange="reversed"),
-            height=360, margin=dict(l=10, r=70, t=30, b=20),
-        )
-        st.plotly_chart(fig_play, use_container_width=True)
-    else:
-        st.caption("플레이타임 데이터가 없습니다.")
-
-st.markdown("---")
-
-# ── 섹션 5: 게임 상세 정보
-st.markdown("### 🕹️ 게임 상세 정보")
-
-if searched_game_data is None:
-    st.info("👈 사이드바에서 게임을 검색해보세요!")
-    st.stop()
-
-game = searched_game_data
-st.markdown(
-    f"**{game['name']}** <span style='color:#4a90a4; font-size:0.8em;'>(🔎 검색 결과)</span>",
-    unsafe_allow_html=True,
-)
-
-d1, d2, d3, d4 = st.columns(4)
-with d1:
-    price_label = "무료 🆓" if game["price"] == 0 else f"${game['price']:.2f}"
-    st.metric("💰 가격", price_label)
-with d2:
-    st.metric("👍 긍정 리뷰", f"{int(game['positive']):,}")
-with d3:
-    st.metric("👎 부정 리뷰", f"{int(game['negative']):,}")
-with d4:
-    st.metric("⭐ 긍정 비율", f"{game['positive_ratio']:.1f}%")
-
-st.markdown(" ")
-g1, g2 = st.columns([1, 2], gap="large")
-
-with g1:
-    ratio_val = game["positive_ratio"]
-    gauge_color = "#c0392b" if ratio_val < 40 else "#d4a017" if ratio_val < 70 else ACCENT_LIGHT
-    fig_gauge = go.Figure(go.Indicator(
-        mode="gauge+number", value=ratio_val,
-        number={"suffix": "%", "font": {"color": FONT_COLOR, "size": 28}},
-        gauge={
-            "axis": {"range": [0, 100], "tickcolor": FONT_COLOR, "tickfont": {"color": FONT_COLOR}},
-            "bar": {"color": gauge_color},
-            "bgcolor": CHART_BG, "bordercolor": GRID_COLOR,
-            "steps": [
-                {"range": [0,  40], "color": "#3d1a1a"},
-                {"range": [40, 70], "color": "#3d3010"},
-                {"range": [70, 100], "color": "#1a3040"},
-            ],
-            "threshold": {"line": {"color": ACCENT_LIGHT, "width": 3}, "thickness": 0.75, "value": ratio_val},
-        },
-        title={"text": "긍정 리뷰 비율", "font": {"color": FONT_COLOR, "size": 14}},
-    ))
-    fig_gauge.update_layout(
-        paper_bgcolor=PLOT_BG, font=dict(color=FONT_COLOR),
-        height=280, margin=dict(l=20, r=20, t=60, b=20),
-    )
-    st.plotly_chart(fig_gauge, use_container_width=True)
-
-with g2:
-    st.markdown(" ")
-    info_col1, info_col2 = st.columns(2)
-
-    with info_col1:
-        st.markdown("**🎯 장르**")
-        if game["genres_list"]:
-            genres_str = ", ".join(game["genres_list"])
-        elif game.get("genres"):
-            genres_str = str(game["genres"]).replace(";", ", ")
-        else:
-            genres_str = "정보 없음"
-        st.markdown(genres_str)
-
-        st.markdown(" ")
-        st.markdown("**📝 총 리뷰 수**")
-        st.markdown(f"{int(game['total_reviews']):,} 개")
-
-    with info_col2:
-        st.markdown("**👥 추정 소유자 수**")
-        owners_val = int(game["owners_num"])
-        st.markdown(f"{owners_val:,} 명" if owners_val > 0 else "정보 없음")
-
-        st.markdown(" ")
-        st.markdown("**🏷️ 원본 owners 값**")
-        st.markdown(str(game["owners"]))
-
-# ── 푸터
-st.markdown("---")
-st.markdown(
-    "<div style='text-align:center; color:#4a90a4; font-size:0.8em; padding-bottom:10px;'>"
-    "🎮 Steam Game Analytics Dashboard &nbsp;|&nbsp; Powered by Streamlit & Plotly"
-    "</div>",
-    unsafe_allow_html=True,
-)
+if __name__ == "__main__":
+    main()
