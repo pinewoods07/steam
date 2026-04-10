@@ -1,5 +1,7 @@
 import streamlit as st
-from groq import Groq
+import vertexai
+from vertexai.generative_models import GenerativeModel, Content, Part
+from google.oauth2 import service_account
 
 # ── 페이지 설정 ──────────────────────────────────────────────────
 st.set_page_config(
@@ -8,8 +10,26 @@ st.set_page_config(
     layout="wide",
 )
 
-# ── API 키 ────────────────────────────────────────────────────────
-client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+# ── Vertex AI 인증 (서비스 계정 JSON) ─────────────────────────────
+@st.cache_resource
+def init_vertex():
+    sa = st.secrets["gcp_service_account"]
+    sa_info = {k: sa[k] for k in [
+        "type", "project_id", "private_key_id", "private_key",
+        "client_email", "client_id", "auth_uri", "token_uri",
+        "auth_provider_x509_cert_url", "client_x509_cert_url",
+    ]}
+    credentials = service_account.Credentials.from_service_account_info(
+        sa_info,
+        scopes=["https://www.googleapis.com/auth/cloud-platform"]
+    )
+    vertexai.init(
+        project=sa_info["project_id"],
+        location="global",
+        credentials=credentials,
+    )
+
+init_vertex()
 
 # ── 공통 멤버 정보 ─────────────────────────────────────────────────
 MEMBERS_INFO = """
@@ -148,52 +168,115 @@ def inject_css(char_color: str):
         background-color: #0A0A0F;
         color: #E8E8F0;
     }}
-    .stApp {{ background-color: #0A0A0F; }}
+    .stApp {{
+        background-color: #0A0A0F;
+        background-image:
+            radial-gradient(ellipse at 20% 20%, #12121E 0%, #0A0A0F 60%),
+            repeating-linear-gradient(0deg, transparent, transparent 40px, #ffffff06 40px, #ffffff06 41px),
+            repeating-linear-gradient(90deg, transparent, transparent 40px, #ffffff06 40px, #ffffff06 41px);
+    }}
 
     /* 헤더 */
     .equinox-header {{
-        display: flex; align-items: center; gap: 12px;
-        padding: 16px 0 24px;
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 18px 0 22px;
         border-bottom: 1px solid #ffffff0F;
-        margin-bottom: 24px;
+        margin-bottom: 32px;
     }}
-    .equinox-title {{ font-size: 22px; font-weight: 800; color: #C9A84C; letter-spacing: 3px; }}
-    .equinox-sub {{ font-size: 11px; color: #444; letter-spacing: 4px; }}
+    .equinox-header-left {{ display: flex; align-items: center; gap: 14px; }}
+    .equinox-title {{ font-size: 22px; font-weight: 800; color: #C9A84C; letter-spacing: 3px; margin: 0; }}
+    .equinox-sub {{ font-size: 11px; color: #444; letter-spacing: 4px; margin-top: 2px; }}
+    .equinox-mode {{ font-size: 11px; color: #444; letter-spacing: 3px; }}
+
+    /* 갤러리 타이틀 */
+    .gallery-title-wrap {{ text-align: center; margin-bottom: 36px; }}
+    .gallery-label {{ font-size: 11px; letter-spacing: 6px; color: #444; margin-bottom: 8px; }}
+    .gallery-title {{ font-size: 28px; font-weight: 800; color: #E8E8F0; letter-spacing: 1px; margin: 0; }}
+    .gallery-sub {{ font-size: 14px; color: #444; margin-top: 10px; }}
 
     /* 캐릭터 카드 */
     .char-card {{
         background: #13131E;
         border: 1px solid #ffffff0A;
         border-radius: 16px;
-        padding: 18px;
-        cursor: pointer;
+        padding: 20px;
+        margin-bottom: 14px;
         transition: all .25s;
-        margin-bottom: 12px;
     }}
     .char-card:hover {{
         border-color: {char_color}66;
-        background: linear-gradient(135deg, {char_color}15, #13131E);
-        transform: translateY(-2px);
+        background: linear-gradient(135deg, {char_color}12, #13131E);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 32px {char_color}22;
+    }}
+    .char-emoji-wrap {{
+        width: 44px; height: 44px; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 22px; flex-shrink: 0;
+        border: 2px solid {char_color}44;
     }}
     .char-name {{ font-size: 16px; font-weight: 700; color: #E8E8F0; }}
-    .char-role {{ font-size: 11px; color: {char_color}; letter-spacing: 1px; margin: 4px 0 8px; }}
+    .char-mbti {{ font-size: 11px; color: #444; margin-top: 1px; }}
+    .char-role {{ font-size: 11px; letter-spacing: 1px; margin: 6px 0 10px; }}
+    .char-desc {{ font-size: 13px; color: #666; line-height: 1.6; margin-bottom: 12px; }}
     .char-tag {{
         display: inline-block; font-size: 11px;
         padding: 2px 8px; border-radius: 6px;
-        background: #1E1E2A; color: #666;
+        background: #1E1E2A; color: #555;
         border: 1px solid #ffffff08;
         margin: 2px;
     }}
+    .char-footer {{
+        display: flex; justify-content: space-between; align-items: center;
+        margin-top: 12px; padding-top: 10px;
+        border-top: 1px solid #ffffff08;
+    }}
+    .char-footer-mbti {{ font-size: 11px; color: #444; }}
 
-    /* 채팅 */
+    /* 대화하기 버튼 */
+    .stButton > button {{
+        background: linear-gradient(135deg, {char_color}CC, {char_color}AA) !important;
+        color: #0A0A0F !important;
+        border: none !important;
+        border-radius: 10px !important;
+        font-weight: 700 !important;
+        font-size: 13px !important;
+        padding: 8px 0 !important;
+        transition: all .2s !important;
+        box-shadow: 0 2px 12px {char_color}44 !important;
+    }}
+    .stButton > button:hover {{
+        opacity: 0.85 !important;
+        transform: translateY(-1px) !important;
+    }}
+
+    /* 채팅 헤더 */
     .chat-header {{
-        background: linear-gradient(135deg, {char_color}15, transparent);
+        background: linear-gradient(135deg, {char_color}12, transparent);
         border: 1px solid {char_color}33;
         border-radius: 16px;
         padding: 16px 20px;
-        margin-bottom: 20px;
-        display: flex; align-items: center; gap: 12px;
+        margin-bottom: 24px;
+        display: flex; align-items: center; gap: 14px;
     }}
+    .chat-avatar {{
+        width: 52px; height: 52px; border-radius: 16px;
+        background: {char_color}18;
+        border: 2px solid {char_color}55;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 24px;
+        box-shadow: 0 0 20px {char_color}33;
+    }}
+    .chat-name {{ font-size: 18px; font-weight: 700; color: {char_color}; }}
+    .chat-role {{ font-size: 12px; color: #555; margin-top: 2px; }}
+    .chat-tag {{
+        font-size: 11px; padding: 3px 8px; border-radius: 6px;
+        background: {char_color}18; color: {char_color};
+        border: 1px solid {char_color}44;
+        margin: 2px;
+    }}
+
+    /* 메시지 */
     .msg-user {{
         background: {char_color}CC;
         color: #0A0A0F;
@@ -204,6 +287,7 @@ def inject_css(char_color: str):
         margin-bottom: 10px;
         font-size: 14px;
         font-weight: 600;
+        box-shadow: 0 2px 12px {char_color}44;
     }}
     .msg-char {{
         background: #1A1A26;
@@ -216,14 +300,14 @@ def inject_css(char_color: str):
         font-size: 14px;
         line-height: 1.6;
     }}
-    .msg-wrap-user {{ display: flex; justify-content: flex-end; }}
-    .msg-wrap-char {{ display: flex; justify-content: flex-start; gap: 8px; align-items: flex-end; }}
+    .msg-wrap-user {{ display: flex; justify-content: flex-end; margin-bottom: 4px; }}
+    .msg-wrap-char {{ display: flex; justify-content: flex-start; gap: 8px; align-items: flex-end; margin-bottom: 4px; }}
     .msg-avatar {{
-        width: 32px; height: 32px; border-radius: 10px;
-        background: {char_color}22;
+        width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
+        background: {char_color}18;
         border: 1px solid {char_color}44;
         display: flex; align-items: center; justify-content: center;
-        font-size: 16px; flex-shrink: 0;
+        font-size: 16px;
     }}
 
     /* 입력창 */
@@ -233,23 +317,13 @@ def inject_css(char_color: str):
         border-radius: 12px !important;
         color: #E8E8F0 !important;
         padding: 10px 16px !important;
+        font-size: 14px !important;
     }}
     .stTextInput input:focus {{
         border-color: {char_color}88 !important;
         box-shadow: none !important;
     }}
-    .stButton button {{
-        background: linear-gradient(135deg, {char_color}, {char_color}CC) !important;
-        color: #0A0A0F !important;
-        border: none !important;
-        border-radius: 12px !important;
-        font-weight: 700 !important;
-        padding: 10px 24px !important;
-    }}
-    .stButton button:hover {{
-        opacity: 0.85 !important;
-        transform: translateY(-1px) !important;
-    }}
+    .stTextInput input::placeholder {{ color: #444 !important; }}
 
     /* 사이드바 */
     [data-testid="stSidebar"] {{
@@ -259,7 +333,9 @@ def inject_css(char_color: str):
     [data-testid="stSidebar"] * {{ color: #E8E8F0 !important; }}
 
     /* 기타 */
-    .stMarkdown hr {{ border-color: #ffffff0F; }}
+    hr {{ border-color: #ffffff0F !important; }}
+    footer {{ visibility: hidden; }}
+    #MainMenu {{ visibility: hidden; }}
     div[data-testid="stVerticalBlock"] > div {{ gap: 0 !important; }}
     </style>
     """, unsafe_allow_html=True)
@@ -267,7 +343,6 @@ def inject_css(char_color: str):
 
 # ── 메인 ──────────────────────────────────────────────────────────
 def main():
-    # 상태 초기화
     if "selected" not in st.session_state:
         st.session_state.selected = None
     if "messages" not in st.session_state:
@@ -278,17 +353,28 @@ def main():
     inject_css(color)
 
     # 헤더
-    st.markdown("""
+    mode_label = f"CHAT · {char['name']}" if char else "CHARACTER GALLERY"
+    st.markdown(f"""
     <div class="equinox-header">
-        <span class="equinox-title">EQUINOX</span>
-        <span class="equinox-sub">에키녹스의 검</span>
+        <div class="equinox-header-left">
+            <div>
+                <div class="equinox-title">EQUINOX</div>
+            </div>
+            <div class="equinox-sub">에키녹스의 검</div>
+        </div>
+        <div class="equinox-mode">{mode_label}</div>
     </div>
     """, unsafe_allow_html=True)
 
     # ── 갤러리 뷰 ──────────────────────────────────────────────────
     if char is None:
-        st.markdown("### 캐릭터를 선택하면 직접 대화할 수 있어요")
-        st.markdown("")
+        st.markdown("""
+        <div class="gallery-title-wrap">
+            <div class="gallery-label">INTERACTIVE</div>
+            <div class="gallery-title">캐릭터와 대화하기</div>
+            <div class="gallery-sub">캐릭터를 선택하면 직접 대화할 수 있어요</div>
+        </div>
+        """, unsafe_allow_html=True)
 
         cols = st.columns(3)
         for i, (cid, c) in enumerate(CHARACTERS.items()):
@@ -296,15 +382,20 @@ def main():
                 tags_html = " ".join([f'<span class="char-tag">{t}</span>' for t in c["tags"]])
                 st.markdown(f"""
                 <div class="char-card">
-                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-                        <span style="font-size:24px">{c['emoji']}</span>
-                        <div>
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+                        <div class="char-emoji-wrap" style="background:{c['color']}18;">{c['emoji']}</div>
+                        <div style="flex:1;">
                             <div class="char-name">{c['name']}</div>
-                            <div style="font-size:11px;color:#555">{c['mbti']}</div>
+                            <div class="char-mbti">{c['mbti']}</div>
                         </div>
+                        <div style="font-size:11px;padding:3px 8px;border-radius:6px;background:{c['color']}18;color:{c['color']};border:1px solid {c['color']}44;">{c['origin'] if 'origin' in c else ''}</div>
                     </div>
-                    <div class="char-role">{c['role']}</div>
+                    <div class="char-role" style="color:{c['color']};">{c['role']}</div>
+                    <div class="char-desc">{c['desc']}</div>
                     <div>{tags_html}</div>
+                    <div class="char-footer">
+                        <span class="char-footer-mbti">{c['mbti']}</span>
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
                 if st.button(f"{c['emoji']} 대화하기", key=cid, use_container_width=True):
@@ -316,7 +407,6 @@ def main():
 
     # ── 채팅 뷰 ────────────────────────────────────────────────────
     else:
-        # 사이드바: 캐릭터 정보 + 뒤로가기
         with st.sidebar:
             st.markdown(f"## {char['emoji']} {char['name']}")
             st.markdown(f"**{char['role']}**")
@@ -336,13 +426,15 @@ def main():
                 st.rerun()
 
         # 채팅 헤더
+        tags_html = " ".join([f'<span class="chat-tag">{t}</span>' for t in char["tags"]])
         st.markdown(f"""
         <div class="chat-header">
-            <span style="font-size:28px">{char['emoji']}</span>
-            <div>
-                <div style="font-size:18px;font-weight:700;color:{char['color']}">{char['name']}</div>
-                <div style="font-size:12px;color:#555">{char['role']} · {char['mbti']}</div>
+            <div class="chat-avatar">{char['emoji']}</div>
+            <div style="flex:1;">
+                <div class="chat-name">{char['name']}</div>
+                <div class="chat-role">{char['role']} · {char['mbti']}</div>
             </div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;">{tags_html}</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -362,9 +454,8 @@ def main():
                 </div>
                 """, unsafe_allow_html=True)
 
-        st.markdown("")
+        st.markdown("<div style='margin-bottom:16px'></div>", unsafe_allow_html=True)
 
-        # 입력
         col1, col2 = st.columns([5, 1])
         with col1:
             user_input = st.text_input(
@@ -377,21 +468,19 @@ def main():
         if send and user_input.strip():
             st.session_state.messages.append({"role": "user", "content": user_input})
 
-            # Groq 호출
+            # Gemini 3.1 Pro Preview (Vertex AI) 호출
             try:
-                history = [
-                    {"role": "system", "content": char["prompt"]},
-                ] + [
-                    {"role": m["role"], "content": m["content"]}
-                    for m in st.session_state.messages[:-1]
-                ] + [{"role": "user", "content": user_input}]
-
-                response = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=history,
-                    max_tokens=512,
+                model = GenerativeModel(
+                    "gemini-3.1-pro-preview",
+                    system_instruction=char["prompt"],
                 )
-                reply = response.choices[0].message.content
+                history = [
+                    Content(role=m["role"], parts=[Part.from_text(m["content"])])
+                    for m in st.session_state.messages[:-1]
+                ]
+                chat = model.start_chat(history=history)
+                response = chat.send_message(user_input)
+                reply = response.text
             except Exception as e:
                 reply = f"...지금은 대화하기 어렵습니다. ({e})"
 
