@@ -157,308 +157,132 @@ CHARACTERS = {
     },
 }
 
-# ── CSS ───────────────────────────────────────────────────────────
+# ── CSS + JS ──────────────────────────────────────────────────────
 def inject_css(char_color: str, is_chat: bool = False):
-    bottom_pad = "140px" if is_chat else "0"
     st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;800;900&family=Cinzel:wght@700;900&display=swap');
 
-    html, body, [class*="css"] {{
-        font-family: 'Noto Sans KR', sans-serif;
-        background-color: #07070E;
-        color: #E8E8F0;
+    html, body, [class*="css"], .stApp {{
+        font-family: 'Noto Sans KR', sans-serif !important;
+        background-color: #07070D !important;
+        color: #E2E2F0 !important;
     }}
-
-    /* ── 앱 배경 ── */
     .stApp {{
-        background-color: #07070E;
         background-image:
-            radial-gradient(ellipse 80% 50% at 50% -10%, {char_color}18 0%, transparent 60%),
-            repeating-linear-gradient(0deg, transparent, transparent 60px, #ffffff04 60px, #ffffff04 61px),
-            repeating-linear-gradient(90deg, transparent, transparent 60px, #ffffff04 60px, #ffffff04 61px);
+            radial-gradient(ellipse 100% 40% at 50% 0%, {char_color}1A 0%, transparent 60%) !important;
+    }}
+    /* 상단 Streamlit 툴바/헤더 숨김 */
+    header[data-testid="stHeader"] {{ display: none !important; }}
+    #MainMenu, footer {{ visibility: hidden !important; }}
+    .stDeployButton {{ display: none !important; }}
+
+    /* 사이드바 */
+    [data-testid="stSidebar"] {{
+        background: #0B0B18 !important;
+        border-right: 1px solid {char_color}22 !important;
+    }}
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] div,
+    [data-testid="stSidebar"] label {{
+        color: #C0C0D8 !important;
     }}
 
-    /* ── 헤더 ── */
-    .equinox-header {{
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 22px 0 20px;
-        border-bottom: 1px solid {char_color}22;
-        margin-bottom: 36px;
-        position: relative;
-    }}
-    .equinox-header::after {{
-        content: '';
-        position: absolute; bottom: -1px; left: 0;
-        width: 80px; height: 1px;
-        background: {char_color};
-    }}
-    .equinox-header-left {{ display: flex; align-items: baseline; gap: 16px; }}
-    .equinox-title {{
-        font-family: 'Cinzel', serif;
-        font-size: 20px; font-weight: 900;
-        color: {char_color}; letter-spacing: 6px; margin: 0;
-        text-shadow: 0 0 30px {char_color}66;
-    }}
-    .equinox-sub {{ font-size: 10px; color: #33334A; letter-spacing: 5px; }}
-    .equinox-mode {{ font-size: 10px; color: #33334A; letter-spacing: 3px; }}
-
-    /* ── 갤러리 타이틀 ── */
-    .gallery-title-wrap {{
-        text-align: center;
-        margin-bottom: 48px;
-        padding-top: 12px;
-    }}
-    .gallery-label {{
-        font-size: 10px; letter-spacing: 8px; color: {char_color}88;
-        margin-bottom: 14px; text-transform: uppercase;
-    }}
-    .gallery-title {{
-        font-family: 'Cinzel', serif;
-        font-size: 34px; font-weight: 900;
-        color: #E8E8F0; letter-spacing: 2px; margin: 0;
-        text-shadow: 0 2px 40px {char_color}33;
-    }}
-    .gallery-sub {{ font-size: 13px; color: #33334A; margin-top: 12px; letter-spacing: 1px; }}
-
-    /* ── 캐릭터 카드 ── */
-    .char-card {{
-        background: linear-gradient(145deg, #0E0E1C 0%, #0A0A14 100%);
-        border: 1px solid #ffffff08;
-        border-radius: 18px;
-        padding: 22px;
-        margin-bottom: 14px;
-        transition: all .3s cubic-bezier(.25,.8,.25,1);
-        position: relative;
-        overflow: hidden;
-    }}
-    .char-card::before {{
-        content: '';
-        position: absolute; top: 0; left: 0; right: 0; height: 1px;
-        background: linear-gradient(90deg, transparent, var(--cc, {char_color})44, transparent);
-        opacity: 0; transition: opacity .3s;
-    }}
-    .char-card:hover {{
-        border-color: {char_color}44;
-        background: linear-gradient(145deg, {char_color}0E 0%, #0A0A14 100%);
-        transform: translateY(-4px);
-        box-shadow: 0 12px 40px {char_color}18, 0 0 0 1px {char_color}22;
-    }}
-    .char-card:hover::before {{ opacity: 1; }}
-    .char-emoji-wrap {{
-        width: 46px; height: 46px; border-radius: 13px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 22px; flex-shrink: 0;
-        background: {char_color}10;
-        border: 1.5px solid {char_color}33;
-        box-shadow: 0 0 16px {char_color}22;
-        transition: box-shadow .3s;
-    }}
-    .char-card:hover .char-emoji-wrap {{ box-shadow: 0 0 24px {char_color}55; }}
-    .char-name {{ font-size: 16px; font-weight: 700; color: #E8E8F0; }}
-    .char-mbti {{ font-size: 10px; color: #2A2A40; margin-top: 2px; letter-spacing: 1px; }}
-    .char-role {{ font-size: 10px; letter-spacing: 2px; margin: 8px 0 10px; text-transform: uppercase; }}
-    .char-desc {{ font-size: 12px; color: #55556A; line-height: 1.7; margin-bottom: 14px; }}
-    .char-tag {{
-        display: inline-block; font-size: 10px;
-        padding: 3px 9px; border-radius: 20px;
-        background: #13131E; color: #44445A;
-        border: 1px solid #ffffff06;
-        margin: 2px;
-        letter-spacing: .5px;
-    }}
-    .char-footer {{
-        display: flex; justify-content: space-between; align-items: center;
-        margin-top: 14px; padding-top: 12px;
-        border-top: 1px solid #ffffff06;
-    }}
-    .char-footer-mbti {{ font-size: 10px; color: #2A2A40; letter-spacing: 1px; }}
-
-    /* ── 대화하기 버튼 ── */
+    /* 모든 버튼 */
     .stButton > button {{
-        background: linear-gradient(135deg, {char_color}EE, {char_color}99) !important;
-        color: #07070E !important;
+        background: linear-gradient(135deg, {char_color}EE 0%, {char_color}88 100%) !important;
+        color: #07070D !important;
         border: none !important;
-        border-radius: 12px !important;
+        border-radius: 10px !important;
         font-weight: 800 !important;
-        font-size: 12px !important;
-        letter-spacing: 2px !important;
-        padding: 10px 0 !important;
-        transition: all .25s !important;
-        box-shadow: 0 4px 20px {char_color}33 !important;
+        font-size: 13px !important;
+        letter-spacing: 1px !important;
+        padding: 9px 0 !important;
+        box-shadow: 0 4px 20px {char_color}44 !important;
+        transition: all .2s !important;
     }}
     .stButton > button:hover {{
-        box-shadow: 0 6px 28px {char_color}55 !important;
+        box-shadow: 0 6px 28px {char_color}66 !important;
         transform: translateY(-2px) !important;
     }}
-    .stButton > button:active {{ transform: translateY(0) !important; }}
 
-    /* ── 사이드바 ── */
-    [data-testid="stSidebar"] {{
-        background: linear-gradient(180deg, #09091A 0%, #07070E 100%) !important;
-        border-right: 1px solid {char_color}18 !important;
-    }}
-    [data-testid="stSidebar"] * {{ color: #E8E8F0 !important; }}
-    [data-testid="stSidebar"] hr {{ border-color: {char_color}22 !important; }}
-
-    /* ── 채팅 헤더 ── */
-    .chat-header {{
-        background: linear-gradient(135deg, {char_color}0C 0%, transparent 70%);
-        border: 1px solid {char_color}28;
-        border-radius: 18px;
-        padding: 18px 22px;
-        margin-bottom: 28px;
-        display: flex; align-items: center; gap: 16px;
-        position: relative; overflow: hidden;
-    }}
-    .chat-header::before {{
-        content: '';
-        position: absolute; top: 0; left: 0; right: 0; height: 1px;
-        background: linear-gradient(90deg, {char_color}88, transparent 60%);
-    }}
-    .chat-avatar {{
-        width: 54px; height: 54px; border-radius: 16px;
-        background: {char_color}14;
-        border: 2px solid {char_color}44;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 26px;
-        box-shadow: 0 0 28px {char_color}44, inset 0 0 12px {char_color}11;
-    }}
-    .chat-name {{
-        font-size: 20px; font-weight: 800; color: {char_color};
-        text-shadow: 0 0 20px {char_color}66;
-    }}
-    .chat-role {{ font-size: 11px; color: #33334A; margin-top: 3px; letter-spacing: 1px; }}
-    .chat-tag {{
-        font-size: 10px; padding: 3px 10px; border-radius: 20px;
-        background: {char_color}14; color: {char_color}CC;
-        border: 1px solid {char_color}33;
-        margin: 2px; letter-spacing: .5px;
-    }}
-
-    /* ── 메시지 ── */
-    .msg-user {{
-        background: linear-gradient(135deg, {char_color}DD, {char_color}99);
-        color: #07070E;
-        border-radius: 18px 18px 4px 18px;
-        padding: 11px 16px;
-        max-width: 68%;
-        margin-left: auto;
-        margin-bottom: 10px;
-        font-size: 14px;
-        font-weight: 600;
-        line-height: 1.6;
-        box-shadow: 0 4px 18px {char_color}33;
-    }}
-    .msg-char {{
-        background: linear-gradient(135deg, #181828 0%, #141420 100%);
-        color: #C8C8E0;
-        border: 1px solid {char_color}18;
-        border-left: 2px solid {char_color}66;
-        border-radius: 4px 18px 18px 18px;
-        padding: 11px 16px;
-        max-width: 68%;
-        margin-bottom: 10px;
-        font-size: 14px;
-        line-height: 1.7;
-        box-shadow: 0 2px 16px #00000044;
-    }}
-    .msg-wrap-user {{ display: flex; justify-content: flex-end; margin-bottom: 6px; }}
-    .msg-wrap-char {{ display: flex; justify-content: flex-start; gap: 10px; align-items: flex-end; margin-bottom: 6px; }}
-    .msg-avatar {{
-        width: 34px; height: 34px; border-radius: 11px; flex-shrink: 0;
-        background: {char_color}14;
-        border: 1.5px solid {char_color}44;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 17px;
-        box-shadow: 0 0 12px {char_color}22;
-    }}
-
-    /* ── 채팅 스크롤 영역 패딩 ── */
-    .chat-scroll-area {{
-        padding-bottom: {bottom_pad};
-    }}
-
-    /* ── 입력창 고정 (하단) ── */
-    .fixed-input-bar {{
-        position: fixed;
-        bottom: 0;
-        left: 0; right: 0;
-        z-index: 999;
-        background: linear-gradient(180deg, transparent 0%, #07070E 30%);
-        padding: 16px 0 20px;
-    }}
-    .fixed-input-inner {{
-        max-width: 730px;
-        margin: 0 auto;
-        padding: 0 16px;
-        display: flex; gap: 10px; align-items: center;
-    }}
-    .fixed-input-box {{
-        flex: 1;
-        background: #111120 !important;
-        border: 1px solid {char_color}44 !important;
+    /* 텍스트 입력창 */
+    .stTextInput > div > div > input {{
+        background: #10101E !important;
+        border: 1px solid {char_color}55 !important;
         border-radius: 14px !important;
-        padding: 12px 18px !important;
-        color: #E8E8F0 !important;
+        color: #E2E2F0 !important;
+        padding: 14px 18px !important;
         font-size: 14px !important;
         font-family: 'Noto Sans KR', sans-serif !important;
-        outline: none !important;
-        box-shadow: 0 0 20px {char_color}11, inset 0 1px 0 {char_color}22 !important;
+        caret-color: {char_color} !important;
+        box-shadow: 0 0 0 0 transparent, inset 0 0 30px {char_color}08 !important;
         transition: border-color .2s, box-shadow .2s !important;
     }}
-    .fixed-input-box:focus {{
-        border-color: {char_color}88 !important;
-        box-shadow: 0 0 28px {char_color}22, inset 0 1px 0 {char_color}33 !important;
+    .stTextInput > div > div > input:focus {{
+        border-color: {char_color}AA !important;
+        box-shadow: 0 0 0 3px {char_color}22, inset 0 0 30px {char_color}0C !important;
     }}
-    .fixed-input-box::placeholder {{ color: #2A2A3A !important; }}
+    .stTextInput > div > div > input::placeholder {{
+        color: #2A2A40 !important;
+    }}
+    /* 입력창 라벨 숨김 */
+    .stTextInput > label {{ display: none !important; }}
 
-    /* Streamlit input을 하단 고정창처럼 보이게 덮어쓰기 */
-    .stTextInput {{ margin: 0 !important; }}
-    .stTextInput input {{
-        background: #111120 !important;
-        border: 1px solid {char_color}44 !important;
-        border-radius: 14px !important;
-        color: #E8E8F0 !important;
-        padding: 13px 18px !important;
-        font-size: 14px !important;
-        box-shadow: 0 0 20px {char_color}11 !important;
-        transition: border-color .2s !important;
+    /* 입력 영역 하단 고정 */
+    {"" if not is_chat else f"""
+    section.main > div.block-container {{
+        padding-bottom: 130px !important;
     }}
-    .stTextInput input:focus {{
-        border-color: {char_color}88 !important;
-        box-shadow: 0 0 28px {char_color}22 !important;
-    }}
-    .stTextInput input::placeholder {{ color: #2A2A3A !important; }}
+    """}
 
-    /* 입력 영역 컨테이너를 하단 고정 */
-    div[data-testid="stVerticalBlock"]:has(.stTextInput) {{
-        position: fixed !important;
-        bottom: 0 !important;
-        left: 0 !important; right: 0 !important;
-        z-index: 999 !important;
-        background: linear-gradient(180deg, transparent 0%, #07070E 25%) !important;
-        padding: 20px 20px 24px !important;
-        max-width: none !important;
-        width: 100% !important;
-    }}
-
-    /* ── 사이드바가 있을 때 입력창 오프셋 ── */
-    [data-testid="stSidebarContent"] ~ div div[data-testid="stVerticalBlock"]:has(.stTextInput) {{
-        left: 245px !important;
-    }}
-
-    /* ── 기타 ── */
+    /* 수평선 */
     hr {{ border-color: {char_color}18 !important; }}
-    footer {{ visibility: hidden; }}
-    #MainMenu {{ visibility: hidden; }}
-    header[data-testid="stHeader"] {{ background: transparent !important; }}
-    div[data-testid="stVerticalBlock"] > div {{ gap: 0 !important; }}
-    ::-webkit-scrollbar {{ width: 3px; }}
-    ::-webkit-scrollbar-track {{ background: transparent; }}
-    ::-webkit-scrollbar-thumb {{ background: {char_color}33; border-radius: 2px; }}
+
+    /* 스크롤바 */
+    ::-webkit-scrollbar {{ width: 3px !important; }}
+    ::-webkit-scrollbar-track {{ background: transparent !important; }}
+    ::-webkit-scrollbar-thumb {{ background: {char_color}33 !important; border-radius: 3px !important; }}
     </style>
     """, unsafe_allow_html=True)
+
+    if is_chat:
+        # JS로 입력 영역을 화면 하단에 고정
+        st.markdown(f"""
+        <script>
+        (function fixInputBar() {{
+            function doFix() {{
+                // 텍스트 입력 + 버튼을 감싸는 컬럼 컨테이너 찾기
+                const inputs = document.querySelectorAll('[data-testid="stTextInput"]');
+                if (!inputs.length) {{ setTimeout(doFix, 200); return; }}
+                const inputEl = inputs[inputs.length - 1];
+                let container = inputEl.closest('[data-testid="column"]');
+                if (!container) container = inputEl.parentElement.parentElement;
+                // 그 행(row)까지 올라가기
+                let row = container.parentElement;
+
+                Object.assign(row.style, {{
+                    position: 'fixed',
+                    bottom: '0',
+                    left: '0',
+                    right: '0',
+                    zIndex: '9999',
+                    background: 'linear-gradient(180deg, transparent 0%, #07070D 28%)',
+                    padding: '16px 24px 20px',
+                    margin: '0',
+                    maxWidth: '100%',
+                    width: '100%',
+                }});
+            }}
+            if (document.readyState === 'loading') {{
+                document.addEventListener('DOMContentLoaded', doFix);
+            }} else {{
+                doFix();
+            }}
+        }})();
+        </script>
+        """, unsafe_allow_html=True)
 
 
 # ── 메인 ──────────────────────────────────────────────────────────
@@ -475,44 +299,86 @@ def main():
     # 헤더
     mode_label = f"CHAT · {char['name']}" if char else "CHARACTER GALLERY"
     st.markdown(f"""
-    <div class="equinox-header">
-        <div class="equinox-header-left">
-            <div class="equinox-title">EQUINOX</div>
-            <div class="equinox-sub">에키녹스의 검</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;
+                padding:22px 0 18px;margin-bottom:32px;
+                border-bottom:1px solid {color}30;
+                position:relative;">
+        <div style="position:absolute;bottom:-1px;left:0;width:72px;height:2px;
+                    background:{color};border-radius:2px;"></div>
+        <div style="display:flex;align-items:baseline;gap:14px;">
+            <span style="font-family:'Cinzel',serif;font-size:22px;font-weight:900;
+                         color:{color};letter-spacing:6px;
+                         text-shadow:0 0 30px {color}66;">EQUINOX</span>
+            <span style="font-size:10px;color:#2A2A44;letter-spacing:5px;">에키녹스의 검</span>
         </div>
-        <div class="equinox-mode">{mode_label}</div>
+        <span style="font-size:10px;color:#2A2A44;letter-spacing:3px;">{mode_label}</span>
     </div>
     """, unsafe_allow_html=True)
 
     # ── 갤러리 뷰 ──────────────────────────────────────────────────
     if char is None:
-        st.markdown("""
-        <div class="gallery-title-wrap">
-            <div class="gallery-label">⚔&nbsp;&nbsp;INTERACTIVE CHARACTER CHAT&nbsp;&nbsp;⚔</div>
-            <div class="gallery-title">에키녹스의 검</div>
-            <div class="gallery-sub">캐릭터를 선택하면 직접 대화할 수 있어요</div>
+        st.markdown(f"""
+        <div style="text-align:center;margin-bottom:48px;padding-top:8px;">
+            <div style="font-size:10px;letter-spacing:8px;color:{color}99;margin-bottom:16px;">
+                ⚔&nbsp;&nbsp;CHARACTER CHAT&nbsp;&nbsp;⚔
+            </div>
+            <div style="font-family:'Cinzel',serif;font-size:36px;font-weight:900;
+                        color:#E2E2F0;letter-spacing:3px;margin:0;
+                        text-shadow:0 2px 40px {color}44;">
+                에키녹스의 검
+            </div>
+            <div style="font-size:13px;color:#2A2A44;margin-top:14px;letter-spacing:2px;">
+                캐릭터를 선택하면 직접 대화할 수 있어요
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
         cols = st.columns(3)
         for i, (cid, c) in enumerate(CHARACTERS.items()):
             with cols[i % 3]:
-                tags_html = " ".join([f'<span class="char-tag">{t}</span>' for t in c["tags"]])
+                tags_html = " ".join([
+                    f'<span style="display:inline-block;font-size:10px;padding:3px 10px;'
+                    f'border-radius:20px;background:#111120;color:#3A3A58;'
+                    f'border:1px solid #ffffff06;margin:2px 2px 0 0;letter-spacing:.5px;">{t}</span>'
+                    for t in c["tags"]
+                ])
                 st.markdown(f"""
-                <div class="char-card" style="--cc:{c['color']};">
-                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-                        <div class="char-emoji-wrap" style="background:{c['color']}14;border-color:{c['color']}44;box-shadow:0 0 18px {c['color']}22;">{c['emoji']}</div>
-                        <div style="flex:1;">
-                            <div class="char-name">{c['name']}</div>
-                            <div class="char-mbti">{c['mbti']}</div>
+                <div style="background:linear-gradient(145deg,#0D0D1A 0%,#0A0A14 100%);
+                            border:1px solid {c['color']}28;border-radius:18px;
+                            padding:22px;margin-bottom:14px;position:relative;overflow:hidden;">
+                    <div style="position:absolute;top:0;left:0;right:0;height:1px;
+                                background:linear-gradient(90deg,{c['color']}55,transparent 60%);"></div>
+                    <!-- 이름 + 이모지 -->
+                    <div style="display:flex;align-items:center;gap:13px;margin-bottom:13px;">
+                        <div style="width:48px;height:48px;border-radius:14px;flex-shrink:0;
+                                    display:flex;align-items:center;justify-content:center;
+                                    font-size:23px;
+                                    background:{c['color']}14;
+                                    border:1.5px solid {c['color']}44;
+                                    box-shadow:0 0 20px {c['color']}33;">
+                            {c['emoji']}
                         </div>
-                        <div style="font-size:10px;padding:3px 9px;border-radius:12px;background:{c['color']}14;color:{c['color']}BB;border:1px solid {c['color']}33;letter-spacing:1px;">{c['origin'] if 'origin' in c else ''}</div>
+                        <div style="flex:1;">
+                            <div style="font-size:16px;font-weight:700;color:#E2E2F0;">{c['name']}</div>
+                            <div style="font-size:10px;color:#1E1E36;margin-top:2px;letter-spacing:1px;">{c['mbti']}</div>
+                        </div>
+                        <div style="font-size:10px;padding:3px 10px;border-radius:12px;
+                                    background:{c['color']}14;color:{c['color']}CC;
+                                    border:1px solid {c['color']}33;letter-spacing:1px;">
+                            {c.get('origin','')}
+                        </div>
                     </div>
-                    <div class="char-role" style="color:{c['color']}99;">{c['role']}</div>
-                    <div class="char-desc">{c['desc']}</div>
-                    <div>{tags_html}</div>
-                    <div class="char-footer">
-                        <span class="char-footer-mbti">{c['mbti']}</span>
+                    <!-- 역할 -->
+                    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;
+                                color:{c['color']}88;margin-bottom:8px;">{c['role']}</div>
+                    <!-- 설명 -->
+                    <div style="font-size:12px;color:#44445A;line-height:1.7;margin-bottom:13px;">{c['desc']}</div>
+                    <!-- 태그 -->
+                    <div style="margin-bottom:13px;">{tags_html}</div>
+                    <!-- 하단 -->
+                    <div style="display:flex;justify-content:space-between;align-items:center;
+                                padding-top:12px;border-top:1px solid {c['color']}18;">
+                        <span style="font-size:10px;color:#1E1E36;letter-spacing:1px;">{c['mbti']}</span>
                         <span style="font-size:10px;color:{c['color']}55;letter-spacing:2px;">대화하기 →</span>
                     </div>
                 </div>
@@ -545,35 +411,74 @@ def main():
                 st.rerun()
 
         # 채팅 헤더
-        tags_html = " ".join([f'<span class="chat-tag">{t}</span>' for t in char["tags"]])
+        tags_html = " ".join([
+            f'<span style="font-size:10px;padding:3px 10px;border-radius:20px;'
+            f'background:{char["color"]}18;color:{char["color"]}CC;'
+            f'border:1px solid {char["color"]}33;margin:2px;letter-spacing:.5px;">{t}</span>'
+            for t in char["tags"]
+        ])
         st.markdown(f"""
-        <div class="chat-header">
-            <div class="chat-avatar">{char['emoji']}</div>
+        <div style="background:linear-gradient(135deg,{char['color']}0F 0%,transparent 70%);
+                    border:1px solid {char['color']}2A;border-radius:18px;
+                    padding:18px 22px;margin-bottom:24px;
+                    display:flex;align-items:center;gap:16px;
+                    position:relative;overflow:hidden;">
+            <div style="position:absolute;top:0;left:0;right:0;height:1px;
+                        background:linear-gradient(90deg,{char['color']}88,transparent 60%);"></div>
+            <div style="width:56px;height:56px;border-radius:16px;flex-shrink:0;
+                        display:flex;align-items:center;justify-content:center;font-size:26px;
+                        background:{char['color']}16;
+                        border:2px solid {char['color']}44;
+                        box-shadow:0 0 28px {char['color']}44,inset 0 0 14px {char['color']}0E;">
+                {char['emoji']}
+            </div>
             <div style="flex:1;">
-                <div class="chat-name">{char['name']}</div>
-                <div class="chat-role">{char['role']} · {char['mbti']}</div>
+                <div style="font-size:20px;font-weight:800;color:{char['color']};
+                            text-shadow:0 0 20px {char['color']}66;">{char['name']}</div>
+                <div style="font-size:11px;color:#2A2A40;margin-top:3px;letter-spacing:1px;">
+                    {char['role']} · {char['mbti']}
+                </div>
             </div>
             <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;">{tags_html}</div>
         </div>
         """, unsafe_allow_html=True)
 
         # 메시지 렌더링
-        st.markdown('<div class="chat-scroll-area">', unsafe_allow_html=True)
         for msg in st.session_state.messages:
             if msg["role"] == "user":
                 st.markdown(f"""
-                <div class="msg-wrap-user">
-                    <div class="msg-user">{msg['content']}</div>
+                <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+                    <div style="background:linear-gradient(135deg,{char['color']}EE,{char['color']}99);
+                                color:#07070D;border-radius:18px 18px 4px 18px;
+                                padding:12px 16px;max-width:68%;
+                                font-size:14px;font-weight:600;line-height:1.6;
+                                box-shadow:0 4px 20px {char['color']}33;">
+                        {msg['content']}
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
             else:
                 st.markdown(f"""
-                <div class="msg-wrap-char">
-                    <div class="msg-avatar">{char['emoji']}</div>
-                    <div class="msg-char">{msg['content']}</div>
+                <div style="display:flex;justify-content:flex-start;gap:10px;
+                            align-items:flex-end;margin-bottom:8px;">
+                    <div style="width:34px;height:34px;border-radius:11px;flex-shrink:0;
+                                display:flex;align-items:center;justify-content:center;
+                                font-size:17px;background:{char['color']}14;
+                                border:1.5px solid {char['color']}44;
+                                box-shadow:0 0 12px {char['color']}22;">
+                        {char['emoji']}
+                    </div>
+                    <div style="background:linear-gradient(135deg,#161626 0%,#111120 100%);
+                                color:#C4C4DC;border-radius:4px 18px 18px 18px;
+                                border:1px solid {char['color']}1A;
+                                border-left:2px solid {char['color']}66;
+                                padding:12px 16px;max-width:68%;
+                                font-size:14px;line-height:1.75;
+                                box-shadow:0 2px 16px #00000055;">
+                        {msg['content']}
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown("<div style='margin-bottom:16px'></div>", unsafe_allow_html=True)
 
